@@ -1,0 +1,4 @@
+# NES controller pins
+set_io latch 28
+set_io clock 38
+set_io data  42
