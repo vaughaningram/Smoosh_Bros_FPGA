@@ -2,14 +2,10 @@
 Smash Bros inspired brawler that runs on FPGA.
 
 # For VGA top.pcf:
-# Inputs
-
+Inputs
 set_io clk_in 20
 
-
-
-# Output
-
+Output
 set_io clk_out 34
 
 set_io rgb[5] 37 
