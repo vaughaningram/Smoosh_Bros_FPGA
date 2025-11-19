@@ -5,7 +5,7 @@ Smash Bros inspired brawler that runs on FPGA.
 Inputs:
 set_io clk_in 20
 
-Output: \n
+Output:
 set_io clk_out 34
 
 set_io rgb[5] 37 
