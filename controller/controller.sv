@@ -3,6 +3,14 @@ module controller (
     output logic clock,
     output logic [7:0] LED,
     output logic [7:0] buttons,
+    output logic button_up,
+    output logic button_down,
+    output logic button_left,
+    output logic button_right,
+    output logic button_select,
+    output logic button_start,
+    output logic button_B,
+    output logic button_A,
     input logic data
 );
     //clock reference from online github repo about fpga clock setup
