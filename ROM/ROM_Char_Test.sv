@@ -1,4 +1,35 @@
- 14'b00000000000000 : data_comb = 6'b110011;
+module ROM_Char_Test (
+    input logic clk,
+    input logic [13:0] addr,
+    output logic [5:0] data
+    // logic timer = counter[25]; // timer for changing addresses. Depends on what
+    //                         // speed you need. 
+);
+
+
+logic [5:0] data_comb;
+// // HSOSC component -> On chip oscillator
+//     SB_HFOSC #(
+//         .CLKHF_DIV("0b00")
+//     ) osc (
+//         .CLKHFPU(1'b1), // Power up
+//         .CLKHFEN(1'b1), // Enable
+//         .CLKHF(clk)     // Clock output
+//         // (TRIM pins omitted intentionally)
+//     );
+
+always_ff @(posedge clk) begin
+    data <= data_comb; // takes data from ROM on clock tick to data
+end
+
+// always_ff @(posedge timer) begin
+//     addr <= addr + 1; // increment address
+// end
+
+// writing always_comb in this way tells System Verilog it is ROM
+always_comb begin
+    case(addr)
+   14'b00000000000000 : data_comb = 6'b110011;
  14'b00000000000001 : data_comb = 6'b110011;
  14'b00000000000010 : data_comb = 6'b110011;
  14'b00000000000011 : data_comb = 6'b110011;
@@ -9598,3 +9629,9 @@
  14'b10010101111101 : data_comb = 6'b110011;
  14'b10010101111110 : data_comb = 6'b110011;
  14'b10010101111111 : data_comb = 6'b110011;
+
+
+    default: data_comb = 6'd0;
+    endcase
+end
+endmodule
