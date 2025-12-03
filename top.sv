@@ -78,23 +78,27 @@ logic clk_out;
       // counter <= counter + 1;
       // char_x <= new_x;
       // char_y <= new_y;
-
       char_rgb <= next_char_rgb;
       char_addr <= next_char_addr;
       inside_char_tile <= inside_char_tile_next;
     end
-    // logic [6:0] new_x;
-    // logic [6:0] new_y;
+
+
     // typedef enum logic [1:0] {S1, S2, S3, S4} anim_state;
     // anim_state state, next_state;
     // always_ff @(posedge counter[23]) begin
     //   state <= next_state;
     // end
+
+    // movement reference
+    // logic [6:0] new_x;
+    // logic [6:0] new_y;
     // always_ff @(posedge frame_rate) begin
     //   new_x <= new_x + 1;
     //   new_y <= new_y + 1;
     // end
 
+    // animation reference
     // always_comb begin
     //   case(state) 
     //   S1: begin
@@ -124,16 +128,6 @@ logic clk_out;
     //   end
     //   endcase
     // end
-
-    
-    
-
-    // // Char_Test ROM instance
-    // ROM_Char_Test u_test_rom (
-    //   .clk(clk_out),
-    //   .addr(char_addr),
-    //   .data(next_char_rgb)
-    // );
 
     // ROM instance for marco
     ROM_marco u_marco_rom (
