@@ -1,4 +1,5 @@
 module top (
+  input logic clk_in,
   output logic hsync,
   output logic vsync,
   output logic [5:0] rgb
@@ -8,16 +9,6 @@ module top (
 logic valid;
 logic [9:0] col;
 logic [9:0] row;
-logic clk_in;
-// HSOSC component -> On chip oscillator
-    SB_HFOSC #(
-        .CLKHF_DIV("0b10")
-    ) osc (
-        .CLKHFPU(1'b1), // Power up
-        .CLKHFEN(1'b1), // Enable
-        .CLKHF(clk_in)     // Clock output
-        // (TRIM pins omitted intentionally)
-    );
 
 
 

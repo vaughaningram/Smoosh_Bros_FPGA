@@ -1,6 +1,6 @@
 from PIL import Image
 
-IMAGE = "../Sprites/marco_sprite-1.png (3).png"
+IMAGE = "../ROM Scripts/image-1.png.png"
 OUTPUT = "6_Bit_Output.png"
 
 img = Image.open(IMAGE).convert("RGB")

@@ -4,7 +4,10 @@
 set_io hsync 25
 set_io vsync 23
 
-# 6-bit RGB output (LSB → MSB)
+# external clk 
+set_io clk_in 20
+
+# 6-bit RGB output 
 set_io rgb[0] 26
 set_io rgb[1] 27
 set_io rgb[2] 32
