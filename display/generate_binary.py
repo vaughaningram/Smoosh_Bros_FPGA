@@ -1,6 +1,6 @@
 from PIL import Image
 
-img = Image.open("background.png").convert("RGB")
+img = Image.open("new_bg_chunked.png").convert("RGB")
 
 # w,h = img.size
 
