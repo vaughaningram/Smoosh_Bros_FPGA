@@ -11,24 +11,12 @@ module controller (
     output logic button_start,
     output logic button_B,
     output logic button_A,
-    input logic data
+    input logic data,
+    input logic clk
 );
-    //clock reference from online github repo about fpga clock setup
-    logic clk48;
-    SB_HFOSC #(
-        .CLKHF_DIV("0b00")  // 00=48MHz
-    ) osc (
-        .CLKHFPU(1'b1), // turn on
-        .CLKHFEN(1'b1), // enable
-        .CLKHF(clk48),  // output clock pin
-        .TRIM0(1'b0), .TRIM1(1'b0), .TRIM2(1'b0), .TRIM3(1'b0), .TRIM4(1'b0),
-        .TRIM5(1'b0), .TRIM6(1'b0), .TRIM7(1'b0), .TRIM8(1'b0), .TRIM9(1'b0)
-    );
-
-    // 2^20 / 48e6 == 21.8 ms == 45.8 Hz frame rate
-    localparam int N = 20; 
+    localparam int N = 18; 
     logic [N:0] ctr;
-    always_ff @(posedge clk48) ctr <= ctr + 1'b1;
+    always_ff @(posedge clk) ctr <= ctr + 1'b1;
 
     logic NESclk;
     logic [N-9:0] NEScount;
@@ -51,7 +39,6 @@ module controller (
     end
 
     //copy to a stable holding register after 8 bits
-    logic [7:0] buttons;
     always_ff @(posedge NESclk) begin
         if (NEScount == 9) begin
             buttons <= shift_reg;

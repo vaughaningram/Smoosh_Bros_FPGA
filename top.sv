@@ -2,13 +2,18 @@ module top (
   input logic clk_in,
   output logic hsync,
   output logic vsync,
-  output logic [5:0] rgb
+  output logic [5:0] rgb,
+  output logic latch,
+  output logic ctrl_clk,
+  input logic data
 );
   
 
 logic valid;
 logic [9:0] col;
+logic [9:0] next_col;
 logic [9:0] row;
+logic [9:0] next_row;
 
 
 
@@ -20,22 +25,26 @@ logic clk_out;
     logic inside_char_tile;
     // tile from ROM
     logic [5:0] tile_rgb;
+    logic [5:0] next_tile_rgb;
     // final rgb value to pass to VGA
     logic [5:0] final_rgb;
+    logic [5:0] next_final_rgb;
 
     // character position for top left pixel
-    logic [9:0] char_x = 0;
-    logic [9:0] char_y = 0;
+    logic [9:0] char_x;
+    logic [9:0] char_y;
     logic [9:0] anim_row = 0;
     logic [9:0] anim_col = 0;
 
+    logic facing_right;
     // frame refresh
     logic frame_rate;
 
     // ROM address
     logic [16:0] back_addr;
-    logic [10:0] char_addr;
-    logic [10:0] next_char_addr;
+    logic [16:0] next_back_addr;
+    logic [13:0] char_addr;
+    logic [13:0] next_char_addr;
 
   mypll u_mypll (
     .clock_in(clk_in),
@@ -46,8 +55,8 @@ logic clk_out;
     .clk(clk_out),
     .hsync(hsync),
     .vsync(vsync),
-    .col(col),  
-    .row(row),    
+    .col(next_col),  
+    .row(next_row),    
     .valid(valid),
     .frame_tick(frame_rate)
   );
@@ -62,75 +71,132 @@ logic clk_out;
     // Determine which tile this pixel belongs to
     assign tile_x = col[9:3];   // col / 8
     assign tile_y = row[9:3];   // row / 8
-    assign back_addr = tile_y * TILES_X + tile_x;
-    logic inside_char_tile_next;
+    assign next_back_addr = tile_y * TILES_X + tile_x;
 
+    logic inside_char_tile_next;
+    logic inside_char_tile_next_next;
+
+    // will work on making this modular in pattern_gen.sv
     always_comb begin
-      inside_char_tile_next = (col >= char_x && col < char_x + 30 
-                          && row >= char_y && row < char_y + 40);
-      next_char_addr = inside_char_tile_next ? ((row - char_y + anim_row) * 30) + (col - char_x + anim_col)
+      inside_char_tile_next = (col >= char_x && col < char_x + 23*2  
+                          && row >= char_y && row < char_y + 30*2);
+      next_char_addr = inside_char_tile_next ?  facing_right ? ((((row - char_y)>>1) + anim_row )* 69) + (69 - 1) - (((col - char_x)>>1) + anim_col):
+                                                               ((((row - char_y)>>1) + anim_row )* 69) + (((col - char_x)>>1) + anim_col)
                                           : 0;
-      if (inside_char_tile && char_rgb != 6'b110011) final_rgb = char_rgb;
-      else final_rgb = tile_rgb;
+      if (inside_char_tile && char_rgb != 6'b110011) next_final_rgb = char_rgb;
+      else next_final_rgb = tile_rgb;
     end
-    logic [24:0] counter;
+    logic [9:0] new_x;
+    logic [9:0] new_y;
+    logic [23:0] counter;
+    logic [5:0] d_rgb;
     always_ff @(posedge clk_out) begin
-      // counter <= counter + 1;
-      // char_x <= new_x;
-      // char_y <= new_y;
+      counter <= counter + 1;
+      row <= next_row;
+      col <= next_col;
+      char_x <= new_x;
+      char_y <= new_y;
       char_rgb <= next_char_rgb;
       char_addr <= next_char_addr;
-      inside_char_tile <= inside_char_tile_next;
+      // inside_char_tile <= inside_char_tile_next;
+      inside_char_tile_next_next <= inside_char_tile_next;
+      inside_char_tile <= inside_char_tile_next_next; // must delay cycle twice because rom is slow
+      back_addr <= next_back_addr;
+      final_rgb <= next_final_rgb;
+      tile_rgb <= next_tile_rgb;
     end
 
 
-    // typedef enum logic [1:0] {S1, S2, S3, S4} anim_state;
-    // anim_state state, next_state;
-    // always_ff @(posedge counter[23]) begin
-    //   state <= next_state;
-    // end
+    typedef enum logic [2:0] {S1, S2, S3, S4, S5, S6} anim_state;
+    anim_state state, next_state;
+    always_ff @(posedge counter[23]) begin
+      state <= next_state;
+    end
 
-    // movement reference
-    // logic [6:0] new_x;
-    // logic [6:0] new_y;
-    // always_ff @(posedge frame_rate) begin
-    //   new_x <= new_x + 1;
-    //   new_y <= new_y + 1;
-    // end
+    always_ff @(posedge frame_rate) begin
+      if (~buttons[0] && new_x < 610) begin 
+        new_x <= new_x + 5;
+        facing_right <= 1;
+      end
+      if (~buttons[1] && new_x > 0) begin 
+        new_x <= new_x - 5;
+        facing_right <= 0;
+      end
+      if (~buttons[2] && new_y < 440) new_y <= new_y + 5;
+      if (~buttons[3] && new_y > 0) new_y <= new_y - 5;
+      
+    end
 
-    // animation reference
-    // always_comb begin
-    //   case(state) 
-    //   S1: begin
-    //     anim_row = 0;
-    //     anim_col = 0;
-    //     next_state = S2;
-    //   end
-    //   S2: begin
-    //     anim_row = 0;
-    //     anim_col = 40;
-    //     next_state = S3;
-    //   end
-    //   S3: begin
-    //     anim_row = 40;
-    //     anim_col = 0;
-    //     next_state = S4;
-    //   end
-    //   S4: begin
-    //     anim_row = 40;
-    //     anim_col = 40;
-    //     next_state = S1;
-    //   end
-    //   default: begin
-    //     anim_col = 0;
-    //     anim_row = 0;
-    //     next_state = S1;
-    //   end
-    //   endcase
-    // end
+  
+    always_comb begin
+      case(state) 
+      S1: begin
+        anim_row = 0;
+        anim_col = 0;
+        next_state = S2;
+      end
+      S2: begin
+        anim_row = 0;
+        anim_col = 23;
+        next_state = S3;
+      end
+      S3: begin
+        anim_row = 0;
+        anim_col = 46;
+        next_state = S4;
+      end
+      S4: begin
+        anim_row = 30;
+        anim_col = 0;
+        next_state = S5;
+      end
+      S5: begin
+        anim_row = 30;
+        anim_col = 23;
+        next_state = S6;
+      end
+      S6: begin
+        anim_row = 30;
+        anim_col = 46;
+        next_state = S1;
+      end
+      default: begin
+        anim_col = 0;
+        anim_row = 0;
+        next_state = S1;
+        end
+      endcase
+    end
 
-    // ROM instance for marco
-    ROM_marco u_marco_rom (
+
+  logic [7:0] buttons;
+  logic button_up, button_down, button_left, button_right;
+  logic button_select, button_start, button_B, button_A;
+  logic [7:0] LED;
+
+  controller u_controller (
+      .latch(latch),
+      .clock(ctrl_clk),
+      .LED(LED),
+      .buttons(buttons),
+      .button_up(button_up),
+      .button_down(button_down),
+      .button_left(button_left),
+      .button_right(button_right),
+      .button_select(button_select),
+      .button_start(button_start),
+      .button_B(button_B),
+      .button_A(button_A),
+      .data(data),
+      .clk(clk_in)
+    );
+    // // ROM instance for marco
+    // ROM_marco u_marco_rom (
+    //   .clk(clk_out),
+    //   .addr(char_addr),
+    //   .rgb(next_char_rgb)
+    // );
+    ROM_koopa u_koopa_rom (
       .clk(clk_out),
       .addr(char_addr),
       .rgb(next_char_rgb)
@@ -140,7 +206,7 @@ logic clk_out;
     ROM_Screen u_rom (
         .clk(clk_out),
         .addr(back_addr),
-        .data(tile_rgb)
+        .data(next_tile_rgb)
     );
 
   pattern_gen u_pattern_gen (

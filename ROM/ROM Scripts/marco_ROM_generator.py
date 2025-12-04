@@ -1,31 +1,27 @@
 from PIL import Image
 
-img = Image.open("../Sprites/marco_sprite-1.png (3).png").convert("RGB")
+img = Image.open("../Sprites/Koop_Walk_6bit-1.png.png").convert("RGB")
 
 
 PALETTE_MAP = {
-    (0, 0, 0): 0,
-    (18, 11, 2): 1,
-    (33, 25, 14): 2,
-    (90, 105, 136): 3,
-    (255, 255, 255): 4,
-    (194, 133, 105): 5,
-    (184, 111, 80): 6,
-    (156, 94, 68): 7,
-    (48, 34, 14): 8,
-    (61, 43, 18): 9,
-    (38, 23, 5): 10,
-    (106, 119, 145): 11,
-    (53, 60, 94): 12,
-    (38, 43, 68): 13,
-    (255, 0, 255): 14,
-    (247, 118, 34): 15
+    (192,   0, 192): 0,
+    (  0,  64,   0): 1,
+    (  0, 128,   0): 2,
+    (128, 192,   0): 3,
+    (  0,   0,   0): 4,
+    (192, 192, 192): 5,
+    (192, 192,   0): 6,
+    (192, 192, 128): 7,
+    (128, 128,   0): 8,
+    (192, 128,   0): 9
 }
+
+
 
 # w,h = img.size
 
-w = 30
-h = 40
+w = 69
+h = 60
 print(img.size)
 print()
  
@@ -43,7 +39,8 @@ for y in range(h):
         r, g, b = img.getpixel((x, y))
         index = PALETTE_MAP[(r,g,b)]
         out.write(f"{index:X}\n")
-    
+        print(f"{index:X}")
+    print("\n")
 out.close()
 
 print("ROM Complete\n")

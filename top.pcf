@@ -14,3 +14,8 @@ set_io rgb[2] 32
 set_io rgb[3] 35
 set_io rgb[4] 31
 set_io rgb[5] 37
+
+# NES controller pins
+set_io latch 28
+set_io ctrl_clk 38
+set_io data  42
