@@ -23,6 +23,10 @@ logic clk_out;
     logic [5:0] char_rgb;
     logic [5:0] next_char_rgb;
     logic inside_char_tile;
+
+    logic [5:0] plt_rgb;
+    logic [5:0] next_plt_rgb;
+    logic inside_plt_tile;
     // tile from ROM
     logic [5:0] tile_rgb;
     logic [5:0] next_tile_rgb;
@@ -36,6 +40,9 @@ logic clk_out;
     logic [9:0] anim_row = 0;
     logic [9:0] anim_col = 0;
 
+    logic [9:0] plt_x;
+    logic [9:0] plt_y;
+
     logic facing_right;
     // frame refresh
     logic frame_rate;
@@ -45,6 +52,8 @@ logic clk_out;
     logic [16:0] next_back_addr;
     logic [13:0] char_addr;
     logic [13:0] next_char_addr;
+    logic [9:0] plt_addr;
+    logic [9:0] next_plt_addr;
 
   mypll u_mypll (
     .clock_in(clk_in),
@@ -76,6 +85,9 @@ logic clk_out;
     logic inside_char_tile_next;
     logic inside_char_tile_next_next;
 
+    logic inside_plt_tile_next;
+    logic inside_plt_tile_next_next;
+
     // will work on making this modular in pattern_gen.sv
     always_comb begin
       //character drawing
@@ -98,6 +110,7 @@ logic clk_out;
     logic [9:0] new_y;
     logic [23:0] counter;
     logic [5:0] d_rgb;
+
     always_ff @(posedge clk_out) begin
       counter <= counter + 1;
       row <= next_row;
@@ -109,6 +122,15 @@ logic clk_out;
       // inside_char_tile <= inside_char_tile_next;
       inside_char_tile_next_next <= inside_char_tile_next;
       inside_char_tile <= inside_char_tile_next_next; // must delay cycle twice because rom is slow
+
+      plt_x <= new_x;
+      plt_y <= new_y;
+      plt_rgb <= new_plt_rgb;
+      plt_addr <= next_plt_addr;
+
+      inside_plt_tile_next_next <= inside_plt_tile_next;
+      inside_plt_tile <= inside_plt_tile_next_next;
+
       back_addr <= next_back_addr;
       final_rgb <= next_final_rgb;
       tile_rgb <= next_tile_rgb;
