@@ -1,6 +1,6 @@
 module ROM_marco (
     input logic clk,
-    input logic [10:0] addr,
+    input logic [13:0] addr,
     output logic [5:0] rgb
 );
 
@@ -15,10 +15,10 @@ initial begin
     $readmemh("marco_ROM.txt", mem);
 end
 
-// getting next address on clock edge
-always_ff @(posedge clk) begin
-    rgb <= next_rgb; 
-end
+// // getting next address on clock edge
+// always_ff @(posedge clk) begin
+    assign rgb = next_rgb; 
+//end
 
 // get the color from the pallet
 palette_lookup u_palette (

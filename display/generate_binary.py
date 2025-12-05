@@ -16,7 +16,7 @@ tiles_y = h // TILE_SIZE
 
 # print(f"Image size: {img.size}")
 
-out = open("output.bin", "w")
+out = open("output_new.bin", "w")
 
 def to6Bit(r,g,b):
     r_new = r >> 6
