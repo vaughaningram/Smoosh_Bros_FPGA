@@ -1,6 +1,6 @@
 from PIL import Image
 
-IMAGE = "../Backgrounds/Layer 1_Tree_Sprite1.png"
+IMAGE = "../Sprites/Koopas_Walk.png"
 OUTPUT = "6_Bit_Output.png"
 
 img = Image.open(IMAGE).convert("RGB")

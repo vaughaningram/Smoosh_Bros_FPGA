@@ -29,6 +29,13 @@ logic clk_out;
     logic [5:0] char_rgb2;
     logic [5:0] next_char_rgb2;
     logic inside_char_tile2;
+    logic [5:0] char_rgb;
+    logic [5:0] next_char_rgb;
+    logic inside_char_tile;
+
+    logic [5:0] plt_rgb;
+    logic [5:0] next_plt_rgb;
+    logic inside_plt_tile;
     // tile from ROM
     logic [5:0] tile_rgb;
     logic [5:0] next_tile_rgb;
@@ -50,6 +57,10 @@ logic clk_out;
 
     logic facing_right1;
     logic facing_right2 = 1;
+    logic [9:0] plt_x;
+    logic [9:0] plt_y;
+
+    logic facing_right;
     // frame refresh
     logic frame_rate;
 
@@ -60,6 +71,10 @@ logic clk_out;
     logic [13:0] next_char_addr1;
     logic [13:0] char_addr2;
     logic [13:0] next_char_addr2;
+    logic [13:0] char_addr;
+    logic [13:0] next_char_addr;
+    logic [9:0] plt_addr;
+    logic [9:0] next_plt_addr;
 
   mypll u_mypll (
     .clock_in(clk_in),
@@ -92,6 +107,9 @@ logic clk_out;
     logic inside_char_tile_next_next1;
     logic inside_char_tile_next2;
     logic inside_char_tile_next_next2;
+
+    logic inside_plt_tile_next;
+    logic inside_plt_tile_next_next;
 
     // will work on making this modular in pattern_gen.sv
     
@@ -128,6 +146,21 @@ logic clk_out;
       // if (inside_plt_tile) next_final_rgb = plt_rgb;
       // else next_final_rgb = tile_rgb;
 
+      //character drawing
+      inside_char_tile_next = (col >= char_x && col < char_x + 23*2  
+                          && row >= char_y && row < char_y + 30*2);
+      next_char_addr = inside_char_tile_next ?  facing_right ? ((((row - char_y)>>1) + anim_row )* 69) + (69 - 1) - (((col - char_x)>>1) + anim_col):
+                                                               ((((row - char_y)>>1) + anim_row )* 69) + (((col - char_x)>>1) + anim_col)
+                                          : 0;
+      if (inside_char_tile && char_rgb != 6'b110011) next_final_rgb = char_rgb;
+      else next_final_rgb = tile_rgb;
+
+      // platform drawing
+      inside_plt_tile_next = (col >= plt_x && col < plt_x + 100 && row >= plt_y && row < plt_y + 9);
+      next_plt_addr = inside_plt_tile_next ? (((row - plt_y))* 100) + (((col - plt_x))): 0;
+
+      if (inside_plt_tile) next_final_rgb = plt_rgb;
+      else next_final_rgb = tile_rgb;
     end
 
 
@@ -138,6 +171,7 @@ logic clk_out;
     logic [9:0] new_y2 = 0;
     logic [23:0] counter;
     logic [5:0] d_rgb;
+
     always_ff @(posedge clk_out) begin
       counter <= counter + 1;
       row <= next_row;
@@ -155,6 +189,17 @@ logic clk_out;
       inside_char_tile1 <= inside_char_tile_next_next1; // must delay cycle twice because rom is slow
       inside_char_tile_next_next2 <= inside_char_tile_next2;
       inside_char_tile2 <= inside_char_tile_next_next2; // must delay cycle twice because rom is slow
+      inside_char_tile_next_next <= inside_char_tile_next;
+      inside_char_tile <= inside_char_tile_next_next; // must delay cycle twice because rom is slow
+
+      plt_x <= new_x;
+      plt_y <= new_y;
+      plt_rgb <= new_plt_rgb;
+      plt_addr <= next_plt_addr;
+
+      inside_plt_tile_next_next <= inside_plt_tile_next;
+      inside_plt_tile <= inside_plt_tile_next_next;
+
       back_addr <= next_back_addr;
       final_rgb <= next_final_rgb;
       // final_rgb2 <= next_final_rgb2;
@@ -303,6 +348,12 @@ logic clk_out;
     //   .addr(plt_addr),
     //   .rgb(next_plt_rgb)
     // );
+
+    ROM_platform u_platform_rom (
+      .clk(clk_out),
+      .addr(plt_addr),
+      .rgb(next_plt_rgb)
+    );
 
     // ROM instance
     ROM_Screen u_rom (
