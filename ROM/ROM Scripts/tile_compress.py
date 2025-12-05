@@ -1,22 +1,22 @@
 from PIL import Image
 
-img = Image.open("new_bg_chunked.png").convert("RGB")
-
-# w,h = img.size
+img = Image.open("../Backgrounds/Layer 1_background_1.png").convert("RGB")
 
 w = 640
 h = 480
-TILE_SIZE = 8
-TILE = 64
+out_img = Image.new("RGB",(w,h))
+# w,h = img.size
+
+
+TILE_SIZE = 2
+TILE = 4
+print(img.size)
 
 addr = 0
 
 tiles_x = w // TILE_SIZE
 tiles_y = h // TILE_SIZE
 
-# print(f"Image size: {img.size}")
-
-out = open("output.bin", "w")
 
 def to6Bit(r,g,b):
     r_new = r >> 6
@@ -45,12 +45,13 @@ for Ty in range(tiles_y):
         ravg = rsum // TILE
         gavg = gsum // TILE
         bavg = bsum // TILE
+        r6, g6, b6 = (ravg >> 6) * 85, (gavg >> 6) * 85, (bavg >> 6) * 85
+        for py2 in range(TILE_SIZE):
+            for px2 in range(TILE_SIZE):
+                out_img.putpixel((Tx*TILE_SIZE + px2, Ty*TILE_SIZE + py2), (r6, g6, b6))
+
         
         val = to6Bit(ravg,gavg,bavg)
-        out.write(f" 17'b{addr:017b} : data_comb = 6'b{val:06b};\n")
-
-        addr += 1
-
-out.close()
-
+        
+out_img.save("compressed.png")
 print("Color Compression Complete\n")
