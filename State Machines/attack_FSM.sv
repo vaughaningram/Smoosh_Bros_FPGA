@@ -32,14 +32,14 @@ module attack_FSM (
     logic [7:0] timer;
 
     // Determine direction type of attack
-    function attack_type_t decode_attack(
-        input logic up, down, left, right
-    );
-        if (up)       return ATK_UP;
-        if (down)     return ATK_DOWN;
-        if (left||right) return ATK_SIDE;
-        return ATK_NEUTRAL;
-    endfunction
+    // function attack_type_t decode_attack(
+    //     input logic up, down, left, right
+    // );
+    //     if (up)       return ATK_UP;
+    //     if (down)     return ATK_DOWN;
+    //     if (left||right) return ATK_SIDE;
+    //     return ATK_NEUTRAL;
+    // endfunction
 
 
     // Sequential Logic

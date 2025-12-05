@@ -42,8 +42,6 @@ logic clk_out;
     // final rgb value to pass to VGA
     logic [5:0] final_rgb;
     logic [5:0] next_final_rgb;
-    // logic [5:0] final_rgb2;
-    // logic [5:0] next_final_rgb2;
 
     // character position for top left pixel
     logic [9:0] char_x1;
@@ -56,11 +54,10 @@ logic clk_out;
     logic [9:0] anim_col2 = 0;
 
     logic facing_right1;
-    logic facing_right2 = 1;
-    logic [9:0] plt_x;
-    logic [9:0] plt_y;
+    logic facing_right2;
+    logic [9:0] plt_x = 100;
+    logic [9:0] plt_y = 410;
 
-    logic facing_right;
     // frame refresh
     logic frame_rate;
 
@@ -96,8 +93,6 @@ logic clk_out;
 
     logic [6:0]   tile_x;
     logic [6:0]   tile_y;
-    // logic [16:0]  rom_addr;
-    // logic [5:0]   rom_data;
     // Determine which tile this pixel belongs to
     assign tile_x = col[9:3];   // col / 8
     assign tile_y = row[9:3];   // row / 8
@@ -111,7 +106,6 @@ logic clk_out;
     logic inside_plt_tile_next;
     logic inside_plt_tile_next_next;
 
-    // will work on making this modular in pattern_gen.sv
     
     always_comb begin
       // PLAYER 1 LOGIC
@@ -120,50 +114,27 @@ logic clk_out;
       next_char_addr1 = inside_char_tile_next1 ?  facing_right1 ? ((((row - char_y1)>>1) + anim_row1 )* 69) + (69 - 1) - (((col - char_x1)>>1) + anim_col1):
                                                                ((((row - char_y1)>>1) + anim_row1 )* 69) + (((col - char_x1)>>1) + anim_col1)
                                           : 0;
-      // if (inside_char_tile1 && char_rgb1 != 6'b110011) next_final_rgb = char_rgb1;
-      // else next_final_rgb = tile_rgb;
       //PLAYER 2
       inside_char_tile_next2 = (col >= char_x2 && col < char_x2 + 30*2  
                           && row >= char_y2 && row < char_y2 + 40*2);
       next_char_addr2 = inside_char_tile_next2 ?  facing_right2 ? ((((row - char_y2)>>1))* 30) + (30 - 1) - (((col - char_x2)>>1)):
                                                                ((((row - char_y2)>>1))* 30) + (((col - char_x2)>>1))
                                           : 0;
-      // if (inside_char_tile2 && char_rgb2 != 6'b110011) next_final_rgb = char_rgb2;
-      // else next_final_rgb = tile_rgb;
+      // platform drawing
+      inside_plt_tile_next = (col >= plt_x && col < plt_x + 100 && row >= plt_y && row < plt_y + 9);
+      next_plt_addr = inside_plt_tile_next ? (((row - plt_y))* 100) + (((col - plt_x))): 0;
 
       if (inside_char_tile1 && char_rgb1 != 6'b110011) begin
         next_final_rgb = char_rgb1;
       end else if (inside_char_tile2 && char_rgb2 != 6'b110011) begin
         next_final_rgb = char_rgb2;
+      end else if (inside_plt_tile) begin 
+        next_final_rgb = plt_rgb;
       end else begin
         next_final_rgb = tile_rgb;
       end
 
-      // // platform drawing
-      // inside_plt_tile_next = (col >= plt_x && col < plt_x + 100 && row >= plt_y && row < plt_y + 9);
-      // next_plt_addr = inside_plt_tile_next ? (((row - plt_y))* 100) + (((col - plt_x))): 0;
-
-      // if (inside_plt_tile) next_final_rgb = plt_rgb;
-      // else next_final_rgb = tile_rgb;
-
-      //character drawing
-      inside_char_tile_next = (col >= char_x && col < char_x + 23*2  
-                          && row >= char_y && row < char_y + 30*2);
-      next_char_addr = inside_char_tile_next ?  facing_right ? ((((row - char_y)>>1) + anim_row )* 69) + (69 - 1) - (((col - char_x)>>1) + anim_col):
-                                                               ((((row - char_y)>>1) + anim_row )* 69) + (((col - char_x)>>1) + anim_col)
-                                          : 0;
-      if (inside_char_tile && char_rgb != 6'b110011) next_final_rgb = char_rgb;
-      else next_final_rgb = tile_rgb;
-
-      // platform drawing
-      inside_plt_tile_next = (col >= plt_x && col < plt_x + 100 && row >= plt_y && row < plt_y + 9);
-      next_plt_addr = inside_plt_tile_next ? (((row - plt_y))* 100) + (((col - plt_x))): 0;
-
-      if (inside_plt_tile) next_final_rgb = plt_rgb;
-      else next_final_rgb = tile_rgb;
     end
-
-
 
     logic [9:0] new_x1;
     logic [9:0] new_y1;
@@ -184,17 +155,13 @@ logic clk_out;
       char_y2 <= new_y2;
       char_rgb2 <= next_char_rgb2;
       char_addr2 <= next_char_addr2;
-      // inside_char_tile <= inside_char_tile_next;
       inside_char_tile_next_next1 <= inside_char_tile_next1;
       inside_char_tile1 <= inside_char_tile_next_next1; // must delay cycle twice because rom is slow
       inside_char_tile_next_next2 <= inside_char_tile_next2;
       inside_char_tile2 <= inside_char_tile_next_next2; // must delay cycle twice because rom is slow
-      inside_char_tile_next_next <= inside_char_tile_next;
-      inside_char_tile <= inside_char_tile_next_next; // must delay cycle twice because rom is slow
+      
 
-      plt_x <= new_x;
-      plt_y <= new_y;
-      plt_rgb <= new_plt_rgb;
+      plt_rgb <= next_plt_rgb;
       plt_addr <= next_plt_addr;
 
       inside_plt_tile_next_next <= inside_plt_tile_next;
@@ -202,16 +169,24 @@ logic clk_out;
 
       back_addr <= next_back_addr;
       final_rgb <= next_final_rgb;
-      // final_rgb2 <= next_final_rgb2;
       tile_rgb <= next_tile_rgb;
     end
 
 
     typedef enum logic [2:0] {S1, S2, S3, S4, S5, S6} anim_state;
     anim_state state, next_state;
-    always_ff @(posedge counter[23]) begin
+    always_ff @(posedge counter[21]) begin
       state <= next_state;
     end
+
+  logic [7:0] buttons1;
+  logic button_up1, button_down1, button_left1, button_right1;
+  logic button_select1, button_start1, button_B1, button_A1;
+  logic [7:0] LED;
+
+  logic [7:0] buttons2;
+  logic button_up2, button_down2, button_left2, button_right2;
+  logic button_select2, button_start2, button_B2, button_A2;
 
     always_ff @(posedge frame_rate) begin
       if (~buttons1[0] && new_x1 < 610) begin 
@@ -230,11 +205,11 @@ logic clk_out;
     always_ff @(posedge frame_rate) begin
       if (~buttons2[0] && new_x2 < 610) begin 
         new_x2 <= new_x2 + 5;
-        facing_right2 <= 1;
+        facing_right2 <= 0;
       end
       if (~buttons2[1] && new_x2 > 0) begin 
         new_x2 <= new_x2 - 5;
-        facing_right2 <= 0;
+        facing_right2 <= 1;
       end
       if (~buttons2[2] && new_y2 < 440) new_y2 <= new_y2 + 5;
       if (~buttons2[3] && new_y2 > 0) new_y2 <= new_y2 - 5;
@@ -282,16 +257,6 @@ logic clk_out;
       endcase
     end
 
-
-  logic [7:0] buttons1;
-  logic button_up1, button_down1, button_left1, button_right1;
-  logic button_select1, button_start1, button_B1, button_A1;
-  logic [7:0] LED;
-
-  logic [7:0] buttons2;
-  logic button_up2, button_down2, button_left2, button_right2;
-  logic button_select2, button_start2, button_B2, button_A2;
-
   controller u_controller1 (
       .latch(latch1),
       .clock(ctrl_clk1),
@@ -325,12 +290,7 @@ logic clk_out;
       .data(data2),
       .clk(clk_in)
     );
-    // // ROM instance for marco
-    // ROM_marco u_marco_rom (
-    //   .clk(clk_out),
-    //   .addr(char_addr),
-    //   .rgb(next_char_rgb)
-    // );
+
     ROM_koopa u_koopa_rom (
       .clk(clk_out),
       .addr(char_addr1),
@@ -342,12 +302,6 @@ logic clk_out;
       .addr(char_addr2),
       .rgb(next_char_rgb2)
     );
-
-    // ROM_platform u_platform_rom (
-    //   .clk(clk_out),
-    //   .addr(plt_addr),
-    //   .rgb(next_plt_rgb)
-    // );
 
     ROM_platform u_platform_rom (
       .clk(clk_out),
