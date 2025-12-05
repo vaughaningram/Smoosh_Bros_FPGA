@@ -78,12 +78,20 @@ logic clk_out;
 
     // will work on making this modular in pattern_gen.sv
     always_comb begin
+      //character drawing
       inside_char_tile_next = (col >= char_x && col < char_x + 23*2  
                           && row >= char_y && row < char_y + 30*2);
       next_char_addr = inside_char_tile_next ?  facing_right ? ((((row - char_y)>>1) + anim_row )* 69) + (69 - 1) - (((col - char_x)>>1) + anim_col):
                                                                ((((row - char_y)>>1) + anim_row )* 69) + (((col - char_x)>>1) + anim_col)
                                           : 0;
       if (inside_char_tile && char_rgb != 6'b110011) next_final_rgb = char_rgb;
+      else next_final_rgb = tile_rgb;
+
+      // platform drawing
+      inside_plt_tile_next = (col >= plt_x && col < plt_x + 100 && row >= plt_y && row < plt_y + 9);
+      next_plt_addr = inside_plt_tile_next ? (((row - plt_y))* 100) + (((col - plt_x))): 0;
+
+      if (inside_plt_tile) next_final_rgb = plt_rgb;
       else next_final_rgb = tile_rgb;
     end
     logic [9:0] new_x;
@@ -200,6 +208,12 @@ logic clk_out;
       .clk(clk_out),
       .addr(char_addr),
       .rgb(next_char_rgb)
+    );
+
+    ROM_platform u_platform_rom (
+      .clk(clk_out),
+      .addr(plt_addr),
+      .rgb(next_plt_rgb)
     );
 
     // ROM instance
