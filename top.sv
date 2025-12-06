@@ -1,3 +1,11 @@
+typedef enum logic [3:0] {
+    IDLE,
+    WALK,
+    RUN,
+    JUMP,
+    CROUCH,
+    FALL
+} movement_state;
 module top (
   input logic clk_in,
   output logic hsync,
@@ -44,10 +52,11 @@ logic clk_out;
     logic [5:0] next_final_rgb;
 
     // character position for top left pixel
+    logic [5:0] koopa_max_width;
     logic [9:0] char_x1;
     logic [9:0] char_y1;
-    logic [9:0] anim_row1 = 0;
-    logic [9:0] anim_col1 = 0;
+    logic [10:0] anim_row1;
+    logic [10:0] anim_col1;
     logic [9:0] char_x2;
     logic [9:0] char_y2;
     logic [9:0] anim_row2 = 0;
@@ -64,8 +73,8 @@ logic clk_out;
     // ROM address
     logic [16:0] back_addr;
     logic [16:0] next_back_addr;
-    logic [10:0] char_addr1;
-    logic [10:0] next_char_addr1;
+    logic [12:0] char_addr1;
+    logic [12:0] next_char_addr1;
     logic [13:0] char_addr2;
     logic [13:0] next_char_addr2;
     logic [13:0] char_addr;
@@ -112,8 +121,8 @@ logic clk_out;
       // PLAYER 1 LOGIC
       inside_char_tile_next1 = (col >= char_x1 && col < char_x1 + 23*2  
                           && row >= char_y1 && row < char_y1 + 30*2);
-      next_char_addr1 = inside_char_tile_next1 ?  facing_right1 ? ((((row - char_y1)>>1) + anim_row1 )* 46) + (46 - 1) - (((col - char_x1)>>1) + anim_col1):
-                                                               ((((row - char_y1)>>1) + anim_row1 )* 46) + (((col - char_x1)>>1) + anim_col1)
+      next_char_addr1 = inside_char_tile_next1 ?  facing_right1 ? ((((row - char_y1)>>1) + anim_row1 )* koopa_max_width) + (koopa_max_width - 1) - (((col - char_x1)>>1) + anim_col1):
+                                                               ((((row - char_y1)>>1) + anim_row1 )* koopa_max_width) + (((col - char_x1)>>1) + anim_col1)
                                           : 0;
       //PLAYER 2
       inside_char_tile_next2 = (col >= char_x2 && col < char_x2 + 30*2  
@@ -136,12 +145,9 @@ logic clk_out;
       end
 
     end
-
-    logic [23:0] counter;
     logic [5:0] d_rgb;
 
     always_ff @(posedge clk_out) begin
-      counter <= counter + 1;
       row <= next_row;
       col <= next_col;
       char_rgb1 <= next_char_rgb1;
@@ -164,13 +170,30 @@ logic clk_out;
       final_rgb <= next_final_rgb;
       tile_rgb <= next_tile_rgb;
     end
-
-
-    typedef enum logic [2:0] {S1, S2, S3, S4, S5, S6} anim_state;
-    anim_state state, next_state;
-    always_ff @(posedge counter[21]) begin
-      state <= next_state;
+  // getting a FPS
+  localparam int MAX_TICK = 5_000_000; // we can change this for speed
+  logic [31:0] anim_counter;
+  logic anim_tick;
+  always_ff @(posedge clk_out) begin
+    if (anim_counter == MAX_TICK) begin
+      anim_tick <= 1;
+      anim_counter <= 0;
+    end else begin
+      anim_tick <= 0;
+      anim_counter <= anim_counter + 1;
     end
+  end
+
+
+  animation player1_animation (
+    .clk(clk_out),
+    .anim_tick(anim_tick),
+    .move_anim(player1_move_state),
+    .anim_row(anim_row1),
+    .anim_col(anim_col1),
+    .max_width(koopa_max_width)
+  );
+
 
   logic [7:0] buttons1;
   logic button_up1, button_down1, button_left1, button_right1;
@@ -179,14 +202,13 @@ logic clk_out;
   logic [7:0] buttons2;
   logic button_up2, button_down2, button_left2, button_right2;
   logic button_select2, button_start2, button_B2, button_A2;
-
+movement_state player2_move_state;
 movement_FSM #(
   .WIDTH(30),
   .HEIGHT(40),
   .INITIAL_X(375),
   .INITIAL_Y(300)
 ) player2_movement (
-  .run_timer(counter[16]),
   .clk(clk_out),
   .frame_rate(frame_rate),
   .button_up(button_B2), // using button B instead of up pad since it is really painful to keep accidentally pressing
@@ -195,16 +217,16 @@ movement_FSM #(
   .button_right(button_right2),
   .x_pos(char_x2),
   .y_pos(char_y2),
-  .facing_right(facing_right2)
+  .facing_right(facing_right2),
+  .move_state(player2_move_state)
 );
-
+movement_state player1_move_state;
 movement_FSM #(
   .WIDTH(23),
   .HEIGHT(30),
   .INITIAL_X(50),
   .INITIAL_Y(290)
 ) player1_movement (
-  .run_timer(counter[16]),
   .clk(clk_out),
   .frame_rate(frame_rate),
   .button_up(button_B1),  // using button B instead of up pad since it is really painful to keep accidentally pressing
@@ -213,29 +235,9 @@ movement_FSM #(
   .button_right(button_right1),
   .x_pos(char_x1),
   .y_pos(char_y1),
-  .facing_right(facing_right1)
+  .facing_right(facing_right1),
+  .move_state(player1_move_state)
 );
-
-  
-always_comb begin
-  case(state) 
-  S1: begin
-    anim_row1 = 0;
-    anim_col1 = 0;
-    next_state = S2;
-  end
-  S2: begin
-    anim_row1 = 0;
-    anim_col1 = 23;
-    next_state = S1;
-  end
-  default: begin
-    anim_col1 = 0;
-    anim_row1 = 0;
-    next_state = S1;
-    end
-  endcase
-end
 
 controller u_controller1 (
     .latch(latch1),
@@ -271,7 +273,7 @@ controller u_controller2 (
     .clk(clk_in)
 );
 
-ROM_koopa_IDLE u_koopa_rom_IDLE (
+ROM_koopa_animations u_koopa_rom_ (
   .clk(clk_out),
   .addr(char_addr1),
   .rgb(next_char_rgb1)

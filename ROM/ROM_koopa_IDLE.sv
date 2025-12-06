@@ -15,13 +15,18 @@ initial begin
     $readmemh("koopa_IDLE.mem", mem);
 end
 // combinational since sv will implement own clk
-assign rgb = next_rgb;
+// assign rgb = next_rgb;
+
+always_ff @(posedge clk) rgb <= next_rgb;
 
 // get the color from the pallet
 koopa_palette_lookup u_palette (
     .index(mem[addr[10:0]]),
     .rgb(next_rgb)
 );
+
+
+
 
 endmodule
 

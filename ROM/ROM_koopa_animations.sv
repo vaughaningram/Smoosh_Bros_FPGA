@@ -1,6 +1,6 @@
-module ROM_koopa_walk (
+module ROM_koopa_animations (
     input logic clk,
-    input logic [11:0] addr,
+    input logic [12:0] addr,
     output logic [5:0] rgb
 );
 
@@ -8,18 +8,19 @@ module ROM_koopa_walk (
 logic [5:0] next_rgb;
 
 // 4 bit output with 2760 addresses
-logic [2:0] mem [0:2759];
+logic [2:0] mem [0:4139];
 
 initial begin 
     // reads from a hex file to memory
-    $readmemh("koopa_walk.mem", mem);
+    $readmemh("Koopa_Sprite_Sheet.koopa", mem);
 end
 // combinational since sv will implement own clk
-assign rgb = next_rgb;
+// assign rgb = next_rgb;
+always_ff @(posedge clk) rgb <= next_rgb;
 
 // get the color from the pallet
 koopa_palette_lookup u_palette (
-    .index(mem[addr[11:0]]),
+    .index(mem[addr]),
     .rgb(next_rgb)
 );
 

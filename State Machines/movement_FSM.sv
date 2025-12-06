@@ -1,10 +1,10 @@
+
 module movement_FSM #(
     parameter WIDTH = 0,
     parameter HEIGHT = 0,
     parameter INITIAL_X = 0,
     parameter INITIAL_Y = 0
     )(
-    input logic run_timer,
     input logic clk,
     input logic frame_rate,
     input logic button_up,
@@ -13,10 +13,9 @@ module movement_FSM #(
     input logic button_right,
     output logic [9:0] x_pos,
     output logic [9:0] y_pos,
-    output logic facing_right
+    output logic facing_right,
+    output movement_state move_state
 );
-typedef enum logic [3:0] {IDLE, WALK, RUN, JUMP, CROUCH, FALL}  movement_state;
-movement_state state, next_state;
 localparam int GRAVITY = 1;
 localparam int MAX_FALL_SPEED = 10;
 localparam int PLATFORM_Y = 410;
@@ -45,19 +44,34 @@ logic [9:0] new_y = INITIAL_Y;
 logic [3:0] gravity_count;
 // timer for run
 logic [4:0]run_time = 0;
+// timer to avoiding switchin anim took quickly
+logic [20:0]idle_time = 0;
 
- always_ff @(posedge frame_rate) begin
-        prev_button_left <= button_left;
+
+
+ always_ff @(posedge clk) begin
+    if (frame_rate) begin
+               prev_button_left <= button_left;
         prev_button_right <= button_right;
         prev_button_up <= button_up;
         button_left_pulse <= button_left && !prev_button_left;
         button_right_pulse <= button_right && !prev_button_right;
         button_pulse <= button_up && !prev_button_up;
 
-        
+        if (button_right || button_left) begin
+            idle_time <= 0;
+            move_state <= WALK;
+        end else begin
+            if(idle_time < 4) begin
+                idle_time <= idle_time + 1;
+            end else begin
+                move_state <= IDLE;
+            end
+        end
+
          // Stop running when no buttons pressed
         if (!button_left && !button_right) begin 
-        is_running <= 0; 
+            is_running <= 0; 
         end else begin
             // decrement timer
             if (run_time != 0) begin
@@ -117,7 +131,8 @@ logic [4:0]run_time = 0;
         y_vel         <= 0;
         gravity_count <= 0;
       end
-     end
+    end
+ end
 assign x_pos = new_x;
 assign y_pos = new_y;
 
