@@ -44,7 +44,10 @@ module controller (
             buttons <= shift_reg;
         end
     end
-
+    assign button_up = ~buttons[3];
+    assign button_down = ~buttons[2];
+    assign button_right = ~buttons[0];
+    assign button_left = ~buttons[1];
     // Display buttons on LEDs
     assign LED = ~buttons;
 

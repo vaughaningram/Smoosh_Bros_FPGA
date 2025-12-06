@@ -44,12 +44,12 @@ logic clk_out;
     logic [5:0] next_final_rgb;
 
     // character position for top left pixel
-    logic [9:0] char_x1 = 30;
+    logic [9:0] char_x1;
     logic [9:0] char_y1;
     logic [9:0] anim_row1 = 0;
     logic [9:0] anim_col1 = 0;
-    logic [9:0] char_x2 = 200;
-    logic [9:0] char_y2 = 0;
+    logic [9:0] char_x2;
+    logic [9:0] char_y2;
     logic [9:0] anim_row2 = 0;
     logic [9:0] anim_col2 = 0;
 
@@ -118,7 +118,7 @@ logic clk_out;
       //PLAYER 2
       inside_char_tile_next2 = (col >= char_x2 && col < char_x2 + 30*2  
                           && row >= char_y2 && row < char_y2 + 40*2);
-      next_char_addr2 = inside_char_tile_next2 ?  facing_right2 ? ((((row - char_y2)>>1))* 30) + (30 - 1) - (((col - char_x2)>>1)):
+      next_char_addr2 = inside_char_tile_next2 ?  ~facing_right2 ? ((((row - char_y2)>>1))* 30) + (30 - 1) - (((col - char_x2)>>1)):
                                                                ((((row - char_y2)>>1))* 30) + (((col - char_x2)>>1))
                                           : 0;
       // platform drawing
@@ -137,10 +137,6 @@ logic clk_out;
 
     end
 
-    logic [9:0] new_x1 = 50;
-    logic [9:0] new_y1;
-    logic [9:0] new_x2 = 375;
-    logic [9:0] new_y2 = 0;
     logic [23:0] counter;
     logic [5:0] d_rgb;
 
@@ -148,12 +144,8 @@ logic clk_out;
       counter <= counter + 1;
       row <= next_row;
       col <= next_col;
-      char_x1 <= new_x1;
-      char_y1 <= new_y1;
       char_rgb1 <= next_char_rgb1;
       char_addr1 <= next_char_addr1;
-      char_x2 <= new_x2;
-      char_y2 <= new_y2;
       char_rgb2 <= next_char_rgb2;
       char_addr2 <= next_char_addr2;
       inside_char_tile_next_next1 <= inside_char_tile_next1;
@@ -184,105 +176,45 @@ logic clk_out;
   logic button_up1, button_down1, button_left1, button_right1;
   logic button_select1, button_start1, button_B1, button_A1;
   logic [7:0] LED;
-
   logic [7:0] buttons2;
   logic button_up2, button_down2, button_left2, button_right2;
   logic button_select2, button_start2, button_B2, button_A2;
 
-// Gravity paramaters
-logic signed [9:0] y_vel1 = 0;
-logic signed [9:0] y_vel2 = 0;
+movement_FSM #(
+  .WIDTH(30),
+  .HEIGHT(40),
+  .INITIAL_X(375),
+  .INITIAL_Y(300)
+) player2_movement (
+  .run_timer(counter[16]),
+  .clk(clk_out),
+  .frame_rate(frame_rate),
+  .button_up(button_up2),
+  .button_down(button_down2),
+  .button_left(button_left2),
+  .button_right(button_right2),
+  .x_pos(char_x2),
+  .y_pos(char_y2),
+  .facing_right(facing_right2)
+);
 
-localparam int GRAVITY = 1;
-localparam int MAX_FALL_SPEED = 10;
-
-// Check if player is on platform
-logic touching_platform1;
-logic touching_platform2;
-// Compute next Y before committing
-logic signed [9:0] next_y1;
-assign next_y1 = new_y1 + y_vel1;
-logic signed [9:0] next_y2;
-assign next_y2 = new_y2 + y_vel2;
-
-always_comb begin
-    touching_platform1 =
-        // character's bottom crossing platform top
-        (new_y1 + 60 <= plt_y) &&      // was above the platform last frame
-        (next_y1 + 60 >= plt_y) &&     // will go past the platform top this frame
-        (new_x1 + 46 >= plt_x) &&
-        (new_x1 <= plt_x + 400);
-        
-    touching_platform2 =
-        (new_y2 + 80 <= plt_y) &&      
-        (next_y2 + 80 >= plt_y) &&     
-        (new_x2 + 60 >= plt_x) &&
-        (new_x2 <= plt_x + 400);
-end
-
-    always_ff @(posedge frame_rate) begin
-      if (~buttons1[1] && new_x1 > 0) begin 
-        new_x1 <= new_x1 - 5;
-        facing_right1 <= 0;
-      end
-      
-      if (~buttons1[0] && new_x1 < 610) begin 
-        new_x1 <= new_x1 + 5;
-        facing_right1 <= 1;
-      end
-
-      // snap so bottom of sprite equals top of platform
-      if (touching_platform1) begin
-        new_y1 <= plt_y - 60;
-        end else begin
-            new_y1 <= next_y1;
-        end
-
-      // Jump 
-      if (~buttons1[3] && touching_platform1) begin
-        y_vel1 <= -12;
-      end 
-      else begin
-          if (!touching_platform1) begin
-            if (counter[21]) y_vel1 <= y_vel1 + 1;
-            if (y_vel1 > 10) y_vel1 <= 10;
-          end else begin
-          if (y_vel1 > 0) y_vel1 <= 0;
-        end
-      end 
-end
-
-    always_ff @(posedge frame_rate) begin
-      if (~buttons2[0] && new_x2 < 610) begin 
-        new_x2 <= new_x2 + 5;
-        facing_right2 <= 0;
-      end
-      if (~buttons2[1] && new_x2 > 0) begin 
-        new_x2 <= new_x2 - 5;
-        facing_right2 <= 1;
-      end
-
-      // snap so bottom of sprite equals top of platform
-      if (touching_platform2) begin
-        new_y2 <= plt_y - 80;
-        end else begin
-            new_y2 <= next_y2;
-        end
-
-      // Jump 
-      if (~buttons2[3] && touching_platform2) begin
-        y_vel2 <= -12;
-      end 
-      else begin
-          if (!touching_platform2) begin
-            if (counter[21]) y_vel2 <= y_vel2 + 1;
-            if (y_vel2 > 10) y_vel2 <= 10;
-          end else begin
-          if (y_vel2 > 0) y_vel2 <= 0;
-        end
-      end 
-      
-    end
+    movement_FSM #(
+      .WIDTH(23),
+      .HEIGHT(30),
+      .INITIAL_X(50),
+      .INITIAL_Y(290)
+    ) player1_movement (
+      .run_timer(counter[16]),
+      .clk(clk_out),
+      .frame_rate(frame_rate),
+      .button_up(button_up1),
+      .button_down(button_down1),
+      .button_left(button_left1),
+      .button_right(button_right1),
+      .x_pos(char_x1),
+      .y_pos(char_y1),
+      .facing_right(facing_right1)
+    );
 
   
     always_comb begin
@@ -394,4 +326,6 @@ end
 
 
 
+
 endmodule
+
