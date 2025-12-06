@@ -22,6 +22,8 @@ localparam int MAX_FALL_SPEED = 10;
 localparam int PLATFORM_Y = 410;
 localparam int PLATFORM_X = 20;
 localparam int JUMP_VELOCITY = -12;
+localparam int RUN_VELOCITY = 6;
+localparam int WALK_VELOCITY = 3;
 // gravity 
 logic signed [9:0] y_vel = 0;
 // Compute next Y before committing
@@ -43,8 +45,6 @@ logic [9:0] new_y = INITIAL_Y;
 logic [3:0] gravity_count;
 // timer for run
 logic [4:0]run_time = 0;
-// supress annoying accidental jump
-logic [2:0] supress_jump = 0;
 
  always_ff @(posedge frame_rate) begin
         prev_button_left <= button_left;
@@ -52,15 +52,7 @@ logic [2:0] supress_jump = 0;
         prev_button_up <= button_up;
         button_left_pulse <= button_left && !prev_button_left;
         button_right_pulse <= button_right && !prev_button_right;
-        
-        if (button_up) begin
-            if (supress_jump < 4) begin
-                supress_jump <= supress_jump + 1;
-            end else begin
-                supress_jump <= 0;
-            end
-        end
-        button_pulse <= (supress_jump == 2) && prev_button_up;
+        button_pulse <= button_up && !prev_button_up;
 
         
          // Stop running when no buttons pressed
@@ -85,18 +77,16 @@ logic [2:0] supress_jump = 0;
     if (button_right && new_x < 610) begin
         facing_right <= 1;
         if (is_running) begin
-            new_x <= new_x + 10;
-            supress_jump <= 0;
+            new_x <= new_x + RUN_VELOCITY;
         end else begin 
-            new_x <= new_x + 2;
+            new_x <= new_x + WALK_VELOCITY;
         end
     end else if (button_left && new_x > 0) begin
         facing_right <= 0;
         if (is_running) begin
-            supress_jump <= 0;
-            new_x <= new_x - 10;
+            new_x <= new_x - RUN_VELOCITY;
         end else begin 
-            new_x <= new_x - 2;
+            new_x <= new_x - WALK_VELOCITY;
         end
     end
             

@@ -64,8 +64,8 @@ logic clk_out;
     // ROM address
     logic [16:0] back_addr;
     logic [16:0] next_back_addr;
-    logic [13:0] char_addr1;
-    logic [13:0] next_char_addr1;
+    logic [10:0] char_addr1;
+    logic [10:0] next_char_addr1;
     logic [13:0] char_addr2;
     logic [13:0] next_char_addr2;
     logic [13:0] char_addr;
@@ -112,8 +112,8 @@ logic clk_out;
       // PLAYER 1 LOGIC
       inside_char_tile_next1 = (col >= char_x1 && col < char_x1 + 23*2  
                           && row >= char_y1 && row < char_y1 + 30*2);
-      next_char_addr1 = inside_char_tile_next1 ?  facing_right1 ? ((((row - char_y1)>>1) + anim_row1 )* 69) + (69 - 1) - (((col - char_x1)>>1) + anim_col1):
-                                                               ((((row - char_y1)>>1) + anim_row1 )* 69) + (((col - char_x1)>>1) + anim_col1)
+      next_char_addr1 = inside_char_tile_next1 ?  facing_right1 ? ((((row - char_y1)>>1) + anim_row1 )* 46) + (46 - 1) - (((col - char_x1)>>1) + anim_col1):
+                                                               ((((row - char_y1)>>1) + anim_row1 )* 46) + (((col - char_x1)>>1) + anim_col1)
                                           : 0;
       //PLAYER 2
       inside_char_tile_next2 = (col >= char_x2 && col < char_x2 + 30*2  
@@ -189,7 +189,7 @@ movement_FSM #(
   .run_timer(counter[16]),
   .clk(clk_out),
   .frame_rate(frame_rate),
-  .button_up(button_up2),
+  .button_up(button_B2), // using button B instead of up pad since it is really painful to keep accidentally pressing
   .button_down(button_down2),
   .button_left(button_left2),
   .button_right(button_right2),
@@ -198,131 +198,111 @@ movement_FSM #(
   .facing_right(facing_right2)
 );
 
-    movement_FSM #(
-      .WIDTH(23),
-      .HEIGHT(30),
-      .INITIAL_X(50),
-      .INITIAL_Y(290)
-    ) player1_movement (
-      .run_timer(counter[16]),
-      .clk(clk_out),
-      .frame_rate(frame_rate),
-      .button_up(button_up1),
-      .button_down(button_down1),
-      .button_left(button_left1),
-      .button_right(button_right1),
-      .x_pos(char_x1),
-      .y_pos(char_y1),
-      .facing_right(facing_right1)
-    );
+movement_FSM #(
+  .WIDTH(23),
+  .HEIGHT(30),
+  .INITIAL_X(50),
+  .INITIAL_Y(290)
+) player1_movement (
+  .run_timer(counter[16]),
+  .clk(clk_out),
+  .frame_rate(frame_rate),
+  .button_up(button_B1),  // using button B instead of up pad since it is really painful to keep accidentally pressing
+  .button_down(button_down1),
+  .button_left(button_left1),
+  .button_right(button_right1),
+  .x_pos(char_x1),
+  .y_pos(char_y1),
+  .facing_right(facing_right1)
+);
 
   
-    always_comb begin
-      case(state) 
-      S1: begin
-        anim_row1 = 0;
-        anim_col1 = 0;
-        next_state = S2;
-      end
-      S2: begin
-        anim_row1 = 0;
-        anim_col1 = 23;
-        next_state = S3;
-      end
-      S3: begin
-        anim_row1 = 0;
-        anim_col1 = 46;
-        next_state = S4;
-      end
-      S4: begin
-        anim_row1 = 30;
-        anim_col1 = 0;
-        next_state = S5;
-      end
-      S5: begin
-        anim_row1 = 30;
-        anim_col1 = 23;
-        next_state = S6;
-      end
-      S6: begin
-        anim_row1 = 30;
-        anim_col1 = 46;
-        next_state = S1;
-      end
-      default: begin
-        anim_col1 = 0;
-        anim_row1 = 0;
-        next_state = S1;
-        end
-      endcase
+always_comb begin
+  case(state) 
+  S1: begin
+    anim_row1 = 0;
+    anim_col1 = 0;
+    next_state = S2;
+  end
+  S2: begin
+    anim_row1 = 0;
+    anim_col1 = 23;
+    next_state = S1;
+  end
+  default: begin
+    anim_col1 = 0;
+    anim_row1 = 0;
+    next_state = S1;
     end
+  endcase
+end
 
-  controller u_controller1 (
-      .latch(latch1),
-      .clock(ctrl_clk1),
-      .LED(LED),
-      .buttons(buttons1),
-      .button_up(button_up1),
-      .button_down(button_down1),
-      .button_left(button_left1),
-      .button_right(button_right1),
-      .button_select(button_select1),
-      .button_start(button_start1),
-      .button_B(button_B1),
-      .button_A(button_A1),
-      .data(data1),
-      .clk(clk_in)
-    );
+controller u_controller1 (
+    .latch(latch1),
+    .clock(ctrl_clk1),
+    .LED(LED),
+    .buttons(buttons1),
+    .button_up(button_up1),
+    .button_down(button_down1),
+    .button_left(button_left1),
+    .button_right(button_right1),
+    .button_select(button_select1),
+    .button_start(button_start1),
+    .button_B(button_B1),
+    .button_A(button_A1),
+    .data(data1),
+    .clk(clk_in)
+);
 
-  controller u_controller2 (
-      .latch(latch2),
-      .clock(ctrl_clk2),
-      .LED(LED),
-      .buttons(buttons2),
-      .button_up(button_up2),
-      .button_down(button_down2),
-      .button_left(button_left2),
-      .button_right(button_right2),
-      .button_select(button_select2),
-      .button_start(button_start2),
-      .button_B(button_B2),
-      .button_A(button_A2),
-      .data(data2),
-      .clk(clk_in)
-    );
+controller u_controller2 (
+    .latch(latch2),
+    .clock(ctrl_clk2),
+    .LED(LED),
+    .buttons(buttons2),
+    .button_up(button_up2),
+    .button_down(button_down2),
+    .button_left(button_left2),
+    .button_right(button_right2),
+    .button_select(button_select2),
+    .button_start(button_start2),
+    .button_B(button_B2),
+    .button_A(button_A2),
+    .data(data2),
+    .clk(clk_in)
+);
 
-    ROM_koopa u_koopa_rom (
-      .clk(clk_out),
-      .addr(char_addr1),
-      .rgb(next_char_rgb1)
-    );
+ROM_koopa_IDLE u_koopa_rom_IDLE (
+  .clk(clk_out),
+  .addr(char_addr1),
+  .rgb(next_char_rgb1)
+);
 
-    ROM_marco u_marco_rom (
-      .clk(clk_out),
-      .addr(char_addr2),
-      .rgb(next_char_rgb2)
-    );
+ROM_marco u_marco_rom (
+  .clk(clk_out),
+  .addr(char_addr2),
+  .rgb(next_char_rgb2)
+);
 
-    ROM_platform u_platform_rom (
-      .clk(clk_out),
-      .addr(plt_addr),
-      .rgb(next_plt_rgb)
-    );
+ROM_platform u_platform_rom (
+  .clk(clk_out),
+  .addr(plt_addr),
+  .rgb(next_plt_rgb)
+);
 
-    // ROM instance
-    ROM_Screen u_rom (
-        .clk(clk_out),
-        .addr(back_addr),
-        .data(next_tile_rgb)
-    );
+// ROM instance
+ROM_Screen u_rom (
+    .clk(clk_out),
+    .addr(back_addr),
+    .data(next_tile_rgb)
+);
 
-  pattern_gen u_pattern_gen (
-    .valid(valid),
-    .col(col),  
-    .row(row),
-    .tile(final_rgb),    
-    .rgb(rgb)     
-  );
+pattern_gen u_pattern_gen (
+  .valid(valid),
+  .col(col),  
+  .row(row),
+  .tile(final_rgb),    
+  .rgb(rgb)     
+);
 
 
 

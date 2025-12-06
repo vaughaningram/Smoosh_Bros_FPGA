@@ -48,6 +48,7 @@ module controller (
     assign button_down = ~buttons[2];
     assign button_right = ~buttons[0];
     assign button_left = ~buttons[1];
+    assign button_B = ~buttons[6];
     // Display buttons on LEDs
     assign LED = ~buttons;
 
