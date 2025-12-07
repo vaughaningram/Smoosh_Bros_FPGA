@@ -6,13 +6,13 @@ module movement_FSM #(
     parameter INITIAL_Y = 0
     )(
     input logic clk,
-    input logic reset,
     input logic frame_rate,
     input logic button_up,
+    input logic reset,
+    input logic collision,
     input logic button_down,
     input logic button_left,
     input logic button_right,
-    input logic collision,
     output logic [9:0] x_pos,
     output logic [9:0] y_pos,
     output logic facing_right,
@@ -23,13 +23,18 @@ localparam int MAX_FALL_SPEED = 10;
 localparam int PLATFORM_Y = 410;
 localparam int PLATFORM_X = 20;
 localparam int JUMP_VELOCITY = -12;
-localparam int RUN_VELOCITY = 6;
-localparam int WALK_VELOCITY = 3;
+localparam int RUN_VELOCITY = 1;
+localparam int WALK_VELOCITY = 1;
+localparam int MAX_WALK_SPEED = 3;
+localparam int MAX_RUN_SPEED = 6;
 // gravity 
 logic signed [9:0] y_vel = 0;
+logic signed [9:0] x_vel = 0;
 // Compute next Y before committing
 logic signed [9:0] next_y;
+logic signed [9:0] next_x;
 assign next_y = new_y + y_vel;
+assign next_x = new_x + x_vel;
 // for double jumps
 logic can_jump_extra = 0;
 logic is_running = 0;
@@ -50,18 +55,16 @@ logic [4:0]run_time = 0;
 logic [20:0]idle_time = 0;
 // check if we already jumped
 logic if_jumped;
-
+// check if we already pressed right or left to see if we can sprint
+logic if_walked;
+// counter for walking acceleration
+logic [3:0] walk_count;
 
  always_ff @(posedge clk) begin
-    if (reset) begin
-        new_x <= INITIAL_X;
-        new_y <= INITIAL_Y;
-        y_vel <= 0;
-        move_state <= IDLE;
-        is_running <= 0;
-        can_jump_extra <= 0;
-        if_jumped <= 0;
-    end else if (frame_rate) begin
+    if (frame_rate) begin
+        // set next x
+        new_x <= next_x;
+
         prev_button_left <= button_left;
         prev_button_right <= button_right;
         prev_button_up <= button_up;
@@ -69,9 +72,11 @@ logic if_jumped;
         button_right_pulse <= button_right && !prev_button_right;
         button_pulse <= button_up && !prev_button_up;
 
+        // making sure WALK doesnt get taken over by IDLE too fast
         if (button_right || button_left) begin
             idle_time <= 0;
             move_state <= WALK;
+            if_walked <= 1;
         end else begin
             if(idle_time < 4) begin
                 idle_time <= idle_time + 1;
@@ -79,16 +84,36 @@ logic if_jumped;
                 move_state <= IDLE;
             end
         end
+        // if (!button_left && !button_right && ((x_vel < 0 )||(x_vel > 0))) begin
+        //         if (x_vel > 0) x_vel <= x_vel - 1;
+        //         if (x_vel < 0) x_vel <= x_vel + 1;
+        // end
+        if (!button_left && !button_right && touching_platform &&
+            ((x_vel < 0) || (x_vel > 0))) begin
+               if (x_vel > 0) x_vel <= x_vel - 1;
+                else          x_vel <= x_vel + 1; 
+            end
 
-            // Stop running when no buttons pressed
-        if (!button_left && !button_right) begin 
-            is_running <= 0; 
-        end else begin
+
+        if (!button_left && !button_right && touching_platform &&
+            ((x_vel < 0) || (x_vel > 0))) begin
+            if_walked <= 0;
+            is_running <= 0;
+            if (x_vel > 0) x_vel <= x_vel - 1;
+            else           x_vel <= x_vel + 1;
+        end
+        //  // Stop running when no buttons pressed and touching platform
+        // if (!button_left && !button_right && touching_platform) begin 
+        //     is_running <= 0; 
+        //     if_walked <= 0;
+        //     x_vel <= 0;
+        // end else begin
             // decrement timer
-            if (run_time != 0) begin
+             else begin if (run_time != 0) begin
                 run_time <= run_time -1;
             end
-            if (button_right_pulse || button_left_pulse) begin
+            // if double tap in a certain window sprint
+            if ((button_right_pulse || button_left_pulse) && if_walked) begin
                 if (run_time == 0 || !touching_platform) begin
                     run_time <= 15;
                 end else begin
@@ -98,22 +123,38 @@ logic if_jumped;
             end
         end
     
-        // Apply movement based on which button is held
-        if (button_right && new_x < 610) begin
-            facing_right <= 1;
-            if (is_running) begin
-                new_x <= new_x + RUN_VELOCITY;
-            end else begin 
-                new_x <= new_x + WALK_VELOCITY;
+    // Apply movement based on which button is held
+    if (button_right && new_x < 610) begin
+        facing_right <= 1;
+        if (is_running) begin
+            if (x_vel < MAX_RUN_SPEED) begin
+                x_vel <= x_vel + RUN_VELOCITY;
+            end else begin
+                x_vel <= x_vel + 0;
             end
-        end else if (button_left && new_x > 0) begin
-            facing_right <= 0;
-            if (is_running) begin
-                new_x <= new_x - RUN_VELOCITY;
-            end else begin 
-                new_x <= new_x - WALK_VELOCITY;
+        end else begin 
+            if (x_vel < MAX_WALK_SPEED) begin
+                x_vel <= x_vel + WALK_VELOCITY;
+            end else begin
+                x_vel <= x_vel + 0;
             end
         end
+    end else if (button_left && new_x > 0) begin
+        facing_right <= 0;
+        if (is_running) begin
+            if (x_vel > (-1 *(MAX_RUN_SPEED))) begin
+                x_vel <= x_vel - RUN_VELOCITY;
+            end else begin
+                x_vel <= x_vel + 0;
+            end
+        end else begin 
+            if (x_vel > (-1*(MAX_WALK_SPEED))) begin
+                x_vel <= x_vel - WALK_VELOCITY;
+            end else begin
+                x_vel <= x_vel + 0;
+            end
+        end
+    end
             
 
       // snap so bottom of sprite equals top of platform

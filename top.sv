@@ -75,12 +75,10 @@ logic clk_out;
     // ROM address
     logic [16:0] back_addr;
     logic [16:0] next_back_addr;
-    logic [12:0] char_addr1;
-    logic [12:0] next_char_addr1;
+    logic [13:0] char_addr1;
+    logic [13:0] next_char_addr1;
     logic [13:0] char_addr2;
     logic [13:0] next_char_addr2;
-    logic [13:0] char_addr;
-    logic [13:0] next_char_addr;
     logic [9:0] plt_addr;
     logic [9:0] next_plt_addr;
 
@@ -332,7 +330,7 @@ controller u_controller2 (
     .clk(clk_out)
 );
 
-ROM_koopa_animations u_koopa_rom_ (
+ROM_koopa_animations_23x30 u_koopa_rom_ (
   .clk(clk_out),
   .addr(char_addr1),
   .rgb(next_char_rgb1)

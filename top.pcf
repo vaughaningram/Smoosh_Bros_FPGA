@@ -26,3 +26,4 @@ set_io ctrl_clk1 38
 set_io ctrl_clk2 45
 set_io data1  42
 set_io data2  36
+
