@@ -198,7 +198,6 @@ logic clk_out;
   logic [7:0] buttons1;
   logic button_up1, button_down1, button_left1, button_right1;
   logic button_select1, button_start1, button_B1, button_A1;
-  logic [7:0] LED;
   logic [7:0] buttons2;
   logic button_up2, button_down2, button_left2, button_right2;
   logic button_select2, button_start2, button_B2, button_A2;
@@ -242,7 +241,6 @@ movement_FSM #(
 controller u_controller1 (
     .latch(latch1),
     .clock(ctrl_clk1),
-    .LED(LED),
     .buttons(buttons1),
     .button_up(button_up1),
     .button_down(button_down1),
@@ -253,13 +251,12 @@ controller u_controller1 (
     .button_B(button_B1),
     .button_A(button_A1),
     .data(data1),
-    .clk(clk_in)
+    .clk(clk_out)
 );
 
 controller u_controller2 (
     .latch(latch2),
     .clock(ctrl_clk2),
-    .LED(LED),
     .buttons(buttons2),
     .button_up(button_up2),
     .button_down(button_down2),
@@ -270,7 +267,7 @@ controller u_controller2 (
     .button_B(button_B2),
     .button_A(button_A2),
     .data(data2),
-    .clk(clk_in)
+    .clk(clk_out)
 );
 
 ROM_koopa_animations u_koopa_rom_ (

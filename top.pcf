@@ -19,6 +19,6 @@ set_io rgb[5] 37
 set_io latch1 28
 set_io latch2 43
 set_io ctrl_clk1 38
-set_io ctrl_clk2 34
+set_io ctrl_clk2 46
 set_io data1  42
 set_io data2  36

@@ -1,7 +1,6 @@
 module controller (
     output logic latch,
     output logic clock,
-    output logic [7:0] LED,
     output logic [7:0] buttons,
     output logic button_up,
     output logic button_down,
@@ -49,7 +48,5 @@ module controller (
     assign button_right = ~buttons[0];
     assign button_left = ~buttons[1];
     assign button_B = ~buttons[6];
-    // Display buttons on LEDs
-    assign LED = ~buttons;
 
 endmodule
