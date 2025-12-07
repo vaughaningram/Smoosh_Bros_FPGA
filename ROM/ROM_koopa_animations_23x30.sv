@@ -1,6 +1,6 @@
-module ROM_koopa_animations (
+module ROM_koopa_animations_23x30 (
     input logic clk,
-    input logic [12:0] addr,
+    input logic [13:0] addr,
     output logic [5:0] rgb
 );
 
@@ -8,11 +8,11 @@ module ROM_koopa_animations (
 logic [5:0] next_rgb;
 
 // 4 bit output with 2760 addresses
-logic [2:0] mem [0:4139];
+logic [2:0] mem [0:9659];
 
 initial begin 
     // reads from a hex file to memory
-    $readmemh("Koopa_Sprite_Sheet.koopa", mem);
+    $readmemh("koopa_23x30_animations.koopa", mem);
 end
 // combinational since sv will implement own clk
 // assign rgb = next_rgb;

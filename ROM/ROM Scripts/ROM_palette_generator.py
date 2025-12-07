@@ -1,6 +1,6 @@
 from PIL import Image
 
-img = Image.open("..\Sprites\Koopas_Animations_Sheet-2.png.png").convert("RGB")
+img = Image.open("6_Bit_Output.png").convert("RGB")
 
 PALETTE_MAP = {
     (192,   0, 192): 0,  # (11,00,11)
