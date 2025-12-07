@@ -46,12 +46,13 @@ logic [3:0] gravity_count;
 logic [4:0]run_time = 0;
 // timer to avoiding switchin anim took quickly
 logic [20:0]idle_time = 0;
-
+// check if we already jumped
+logic if_jumped;
 
 
  always_ff @(posedge clk) begin
     if (frame_rate) begin
-               prev_button_left <= button_left;
+        prev_button_left <= button_left;
         prev_button_right <= button_right;
         prev_button_up <= button_up;
         button_left_pulse <= button_left && !prev_button_left;
@@ -107,14 +108,15 @@ logic [20:0]idle_time = 0;
 
       // snap so bottom of sprite equals top of platform
       if (touching_platform) begin
+        if_jumped <= 0;
         new_y <= PLATFORM_Y - 2*HEIGHT;
         end else begin
             new_y <= next_y;
         end
-
       // Jump 
-      if (button_pulse && touching_platform) begin
+      if (button_pulse && !if_jumped) begin
         can_jump_extra <= 1;
+        if_jumped <= 1;
         y_vel <= JUMP_VELOCITY;
       end else if (!touching_platform && button_pulse && can_jump_extra) begin
                 can_jump_extra <= 0;

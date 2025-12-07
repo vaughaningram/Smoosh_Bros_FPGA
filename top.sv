@@ -121,7 +121,7 @@ logic clk_out;
       // PLAYER 1 LOGIC
       inside_char_tile_next1 = (col >= char_x1 && col < char_x1 + 23*2  
                           && row >= char_y1 && row < char_y1 + 30*2);
-      next_char_addr1 = inside_char_tile_next1 ?  facing_right1 ? ((((row - char_y1)>>1) + anim_row1 )* koopa_max_width) + (koopa_max_width - 1) - (((col - char_x1)>>1) + anim_col1):
+      next_char_addr1 = inside_char_tile_next1 ?  facing_right1 ? ((((row - char_y1)>>1) + anim_row1 )* koopa_max_width) + ( (23 - 1 - (((col - char_x1)>>1))) + anim_col1 ):
                                                                ((((row - char_y1)>>1) + anim_row1 )* koopa_max_width) + (((col - char_x1)>>1) + anim_col1)
                                           : 0;
       //PLAYER 2
