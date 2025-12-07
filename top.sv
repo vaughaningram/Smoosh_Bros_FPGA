@@ -8,6 +8,7 @@ typedef enum logic [3:0] {
 } movement_state;
 module top (
   input logic clk_in,
+  output logic debug_collision,
   output logic hsync,
   output logic vsync,
   output logic [5:0] rgb,
@@ -18,7 +19,8 @@ module top (
   input logic data1,
   input logic data2
 );
-  
+
+assign debug_collision = player1_hit;
 
 logic valid;
 logic [9:0] col;
@@ -115,6 +117,19 @@ logic clk_out;
 
     logic inside_plt_tile_next;
     logic inside_plt_tile_next_next;
+
+    logic player1_hit;
+    logic player2_hit;
+
+    // simple AABB collision
+    assign player1_hit =
+        (char_x1 < char_x2 + 60) &&
+        (char_x1 + 46 > char_x2) &&
+        (char_y1 < char_y2 + 80) &&
+        (char_y1 + 60 > char_y2);
+
+    assign player2_hit = player1_hit;   // same check for both players
+
 
     
     always_comb begin
@@ -214,6 +229,7 @@ movement_FSM #(
   .button_down(button_down2),
   .button_left(button_left2),
   .button_right(button_right2),
+  //.collision(player2_hit),
   .x_pos(char_x2),
   .y_pos(char_y2),
   .facing_right(facing_right2),
@@ -232,11 +248,57 @@ movement_FSM #(
   .button_down(button_down1),
   .button_left(button_left1),
   .button_right(button_right1),
+  //.collision(player1_hit),
   .x_pos(char_x1),
   .y_pos(char_y1),
   .facing_right(facing_right1),
   .move_state(player1_move_state)
 );
+
+logic [9:0] char_x1_next;
+logic [9:0] char_y1_next;
+logic [9:0] char_x2_next;
+logic [9:0] char_y2_next;
+logic signed [9:0] new_x1;
+logic signed [9:0] new_y1;
+// collision #(
+//     .W1(23), 
+//     .H1(30),
+//     .W2(30), 
+//     .H2(40)
+// ) collision_u(
+//     .x1(char_x1_next), 
+//     .y1(char_y1_next),
+//     .x2(char_x2_next), 
+//     .y2(char_y2_next),
+//     .collision(player1_hit),
+//     .clk(clk_out), 
+//     .frame_tick(frame_rate),
+//     .new_x1(new_x1),
+//     .new_y1(new_y1)
+// );
+
+// always_ff @(posedge clk_out) begin
+//     if (frame_rate) begin
+//         if (player1_hit) begin
+//             // both players corrected
+//             char_x1 <= new_x1;
+//             char_y1 <= new_y1;
+
+//             // player 2 stays put
+//             char_x2 <= char_x2;
+//             char_y2 <= char_y2;
+
+//         end else begin
+//             char_x1 <= char_x1_next;
+//             char_y1 <= char_y1_next;
+
+//             char_x2 <= char_x2_next;
+//             char_y2 <= char_y2_next;
+//         end
+//     end
+// end
+
 
 controller u_controller1 (
     .latch(latch1),

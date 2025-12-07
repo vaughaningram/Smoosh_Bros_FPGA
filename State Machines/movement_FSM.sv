@@ -11,6 +11,7 @@ module movement_FSM #(
     input logic button_down,
     input logic button_left,
     input logic button_right,
+    input logic collision,
     output logic [9:0] x_pos,
     output logic [9:0] y_pos,
     output logic facing_right,
@@ -70,7 +71,7 @@ logic if_jumped;
             end
         end
 
-         // Stop running when no buttons pressed
+            // Stop running when no buttons pressed
         if (!button_left && !button_right) begin 
             is_running <= 0; 
         end else begin
@@ -88,22 +89,22 @@ logic if_jumped;
             end
         end
     
-    // Apply movement based on which button is held
-    if (button_right && new_x < 610) begin
-        facing_right <= 1;
-        if (is_running) begin
-            new_x <= new_x + RUN_VELOCITY;
-        end else begin 
-            new_x <= new_x + WALK_VELOCITY;
+        // Apply movement based on which button is held
+        if (button_right && new_x < 610) begin
+            facing_right <= 1;
+            if (is_running) begin
+                new_x <= new_x + RUN_VELOCITY;
+            end else begin 
+                new_x <= new_x + WALK_VELOCITY;
+            end
+        end else if (button_left && new_x > 0) begin
+            facing_right <= 0;
+            if (is_running) begin
+                new_x <= new_x - RUN_VELOCITY;
+            end else begin 
+                new_x <= new_x - WALK_VELOCITY;
+            end
         end
-    end else if (button_left && new_x > 0) begin
-        facing_right <= 0;
-        if (is_running) begin
-            new_x <= new_x - RUN_VELOCITY;
-        end else begin 
-            new_x <= new_x - WALK_VELOCITY;
-        end
-    end
             
 
       // snap so bottom of sprite equals top of platform
