@@ -129,8 +129,6 @@ logic clk_out;
         (char_y1 + 60 > char_y2);
 
     assign player2_hit = player1_hit;   // same check for both players
-
-
     
     always_comb begin
       // PLAYER 1 LOGIC
@@ -149,9 +147,9 @@ logic clk_out;
       inside_plt_tile_next = (col >= plt_x && col < plt_x + 400 && row >= plt_y && row < plt_y + 9);
       next_plt_addr = inside_plt_tile_next ? (((row - plt_y))* 100) + (((col - plt_x))): 0;
 
-      if (inside_char_tile1 && char_rgb1 != 6'b110011) begin
+      if (inside_char_tile1 && char_rgb1 != 6'b110011 && player1_alive) begin
         next_final_rgb = char_rgb1;
-      end else if (inside_char_tile2 && char_rgb2 != 6'b110011) begin
+      end else if (inside_char_tile2 && char_rgb2 != 6'b110011 && player2_alive) begin
         next_final_rgb = char_rgb2;
       end else if (inside_plt_tile) begin 
         next_final_rgb = plt_rgb;
@@ -361,11 +359,120 @@ pattern_gen u_pattern_gen (
   .valid(valid),
   .col(col),  
   .row(row),
-  .tile(final_rgb),    
+  .tile(display_rgb),    
   .rgb(rgb)     
 );
 
+// Hit/damage signals
+logic hit_stun_active1, hit_stun_active2;
+logic [9:0] damage1, damage2;
 
+// Player alive status - disappear when damage >= 100
+logic player1_alive, player2_alive;
+assign player1_alive = (damage1 < 100);
+assign player2_alive = (damage2 < 100);
+
+// If button A is pressed AND characters are colliding (player1_hit) -> opponent takes damage
+// Uses the existing AABB collision detection from daniel
+
+// Edge detection for button presses to avoid repeated hits while holding
+logic prev_A1, prev_A2;
+logic a1_pressed, a2_pressed;
+
+always_ff @(posedge clk_out) begin
+    prev_A1 <= button_A1;
+    prev_A2 <= button_A2;
+end
+
+assign a1_pressed = button_A1 && !prev_A1;  // Rising edge of A button
+assign a2_pressed = button_A2 && !prev_A2;
+
+// Player 1 attacks Player 2 when: A pressed + characters colliding + P2 not in hitstun
+logic got_hit2;
+assign got_hit2 = a1_pressed && player1_hit && !hit_stun_active2;
+
+// Player 2 attacks Player 1 when: A pressed + characters colliding + P1 not in hitstun  
+logic got_hit1;
+assign got_hit1 = a2_pressed && player1_hit && !hit_stun_active1;
+
+// Player 1 Hit/Damage FSM
+hit_FSM player1_hit_fsm (
+    .clk(clk_out),
+    .reset(1'b0),
+    .frame_tick(frame_rate),
+    .got_hit(got_hit1),
+    .hit_damage_in(6'd12),  // 12% damage per hit
+    .hit_stun_active(hit_stun_active1),
+    .damage(damage1)
+);
+
+// Player 2 Hit/Damage FSM
+hit_FSM player2_hit_fsm (
+    .clk(clk_out),
+    .reset(1'b0),
+    .frame_tick(frame_rate),
+    .got_hit(got_hit2),
+    .hit_damage_in(6'd12),  // 12% damage per hit
+    .hit_stun_active(hit_stun_active2),
+    .damage(damage2)
+);
+
+// HEALTH BAR RENDERING
+
+// Health bar positions
+localparam int P1_BAR_X = 20;
+localparam int P2_BAR_X = 520;
+localparam int BAR_Y = 10;
+localparam int BAR_WIDTH = 100;
+localparam int BAR_HEIGHT = 15;
+
+// Calculate health bar fill (inverse of damage - more damage = less bar)
+logic [9:0] p1_fill, p2_fill;
+assign p1_fill = (damage1 >= 100) ? 0 : (100 - damage1);
+assign p2_fill = (damage2 >= 100) ? 0 : (100 - damage2);
+
+// Health bar pixel detection
+logic inside_p1_bar_outline, inside_p1_bar_fill;
+logic inside_p2_bar_outline, inside_p2_bar_fill;
+logic inside_health_bar;
+logic [5:0] health_bar_rgb;
+
+always_comb begin
+    // Player 1 health bar
+    inside_p1_bar_outline = (col >= P1_BAR_X && col < P1_BAR_X + BAR_WIDTH + 4 &&
+                             row >= BAR_Y && row < BAR_Y + BAR_HEIGHT + 4);
+    inside_p1_bar_fill = (col >= P1_BAR_X + 2 && col < P1_BAR_X + 2 + p1_fill &&
+                          row >= BAR_Y + 2 && row < BAR_Y + BAR_HEIGHT + 2);
+    
+    // Player 2 health bar
+    inside_p2_bar_outline = (col >= P2_BAR_X && col < P2_BAR_X + BAR_WIDTH + 4 &&
+                             row >= BAR_Y && row < BAR_Y + BAR_HEIGHT + 4);
+    inside_p2_bar_fill = (col >= P2_BAR_X + 2 && col < P2_BAR_X + 2 + p2_fill &&
+                          row >= BAR_Y + 2 && row < BAR_Y + BAR_HEIGHT + 2);
+    
+    inside_health_bar = inside_p1_bar_outline || inside_p2_bar_outline;
+    
+    // Color the health bars
+    if (inside_p1_bar_fill)
+        health_bar_rgb = 6'b001100;  // Green fill for P1
+    else if (inside_p1_bar_outline)
+        health_bar_rgb = 6'b111111;  // White outline for P1
+    else if (inside_p2_bar_fill)
+        health_bar_rgb = 6'b110000;  // Red fill for P2
+    else if (inside_p2_bar_outline)
+        health_bar_rgb = 6'b111111;  // White outline for P2
+    else
+        health_bar_rgb = 6'b000000;
+end
+
+// health bar overlay on top of game graphics
+logic [5:0] display_rgb;
+always_comb begin
+    if (inside_health_bar)
+        display_rgb = health_bar_rgb;
+    else
+        display_rgb = final_rgb;
+end
 
 
 endmodule
