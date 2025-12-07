@@ -6,6 +6,7 @@ module movement_FSM #(
     parameter INITIAL_Y = 0
     )(
     input logic clk,
+    input logic reset,
     input logic frame_rate,
     input logic button_up,
     input logic button_down,
@@ -52,7 +53,15 @@ logic if_jumped;
 
 
  always_ff @(posedge clk) begin
-    if (frame_rate) begin
+    if (reset) begin
+        new_x <= INITIAL_X;
+        new_y <= INITIAL_Y;
+        y_vel <= 0;
+        move_state <= IDLE;
+        is_running <= 0;
+        can_jump_extra <= 0;
+        if_jumped <= 0;
+    end else if (frame_rate) begin
         prev_button_left <= button_left;
         prev_button_right <= button_right;
         prev_button_up <= button_up;
