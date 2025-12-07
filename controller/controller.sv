@@ -47,6 +47,9 @@ module controller (
     assign button_down = ~buttons[2];
     assign button_right = ~buttons[0];
     assign button_left = ~buttons[1];
+    assign button_select = ~buttons[5];
+    assign button_start = ~buttons[4];
     assign button_B = ~buttons[6];
+    assign button_A = ~buttons[7];
 
 endmodule

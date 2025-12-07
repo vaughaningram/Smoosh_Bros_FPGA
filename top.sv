@@ -8,6 +8,7 @@ typedef enum logic [3:0] {
 } movement_state;
 module top (
   input logic clk_in,
+  output logic debug_collision,
   output logic hsync,
   output logic vsync,
   output logic [5:0] rgb,
@@ -18,7 +19,8 @@ module top (
   input logic data1,
   input logic data2
 );
-  
+
+assign debug_collision = player1_hit;
 
 logic valid;
 logic [9:0] col;
@@ -114,6 +116,17 @@ logic clk_out;
     logic inside_plt_tile_next;
     logic inside_plt_tile_next_next;
 
+    logic player1_hit;
+    logic player2_hit;
+
+    // simple AABB collision
+    assign player1_hit =
+        (char_x1 < char_x2 + 60) &&
+        (char_x1 + 46 > char_x2) &&
+        (char_y1 < char_y2 + 80) &&
+        (char_y1 + 60 > char_y2);
+
+    assign player2_hit = player1_hit;   // same check for both players
     
     always_comb begin
       // PLAYER 1 LOGIC
@@ -132,9 +145,9 @@ logic clk_out;
       inside_plt_tile_next = (col >= plt_x && col < plt_x + 400 && row >= plt_y && row < plt_y + 9);
       next_plt_addr = inside_plt_tile_next ? (((row - plt_y))* 100) + (((col - plt_x))): 0;
 
-      if (inside_char_tile1 && char_rgb1 != 6'b110011) begin
+      if (inside_char_tile1 && char_rgb1 != 6'b110011 && player1_alive) begin
         next_final_rgb = char_rgb1;
-      end else if (inside_char_tile2 && char_rgb2 != 6'b110011) begin
+      end else if (inside_char_tile2 && char_rgb2 != 6'b110011 && player2_alive) begin
         next_final_rgb = char_rgb2;
       end else if (inside_plt_tile) begin 
         next_final_rgb = plt_rgb;
@@ -212,10 +225,12 @@ movement_FSM #(
   .button_down(button_down2),
   .button_left(button_left2),
   .button_right(button_right2),
+  //.collision(player2_hit),
   .x_pos(char_x2),
   .y_pos(char_y2),
   .facing_right(facing_right2),
-  .move_state(player2_move_state)
+  .move_state(player2_move_state),
+  .reset(respawn2) // Respawn resets position
 );
 movement_state player1_move_state;
 movement_FSM #(
@@ -230,11 +245,58 @@ movement_FSM #(
   .button_down(button_down1),
   .button_left(button_left1),
   .button_right(button_right1),
+  //.collision(player1_hit),
   .x_pos(char_x1),
   .y_pos(char_y1),
   .facing_right(facing_right1),
-  .move_state(player1_move_state)
+  .move_state(player1_move_state),
+  .reset(respawn1) // Respawn resets position
 );
+
+logic [9:0] char_x1_next;
+logic [9:0] char_y1_next;
+logic [9:0] char_x2_next;
+logic [9:0] char_y2_next;
+logic signed [9:0] new_x1;
+logic signed [9:0] new_y1;
+// collision #(
+//     .W1(23), 
+//     .H1(30),
+//     .W2(30), 
+//     .H2(40)
+// ) collision_u(
+//     .x1(char_x1_next), 
+//     .y1(char_y1_next),
+//     .x2(char_x2_next), 
+//     .y2(char_y2_next),
+//     .collision(player1_hit),
+//     .clk(clk_out), 
+//     .frame_tick(frame_rate),
+//     .new_x1(new_x1),
+//     .new_y1(new_y1)
+// );
+
+// always_ff @(posedge clk_out) begin
+//     if (frame_rate) begin
+//         if (player1_hit) begin
+//             // both players corrected
+//             char_x1 <= new_x1;
+//             char_y1 <= new_y1;
+
+//             // player 2 stays put
+//             char_x2 <= char_x2;
+//             char_y2 <= char_y2;
+
+//         end else begin
+//             char_x1 <= char_x1_next;
+//             char_y1 <= char_y1_next;
+
+//             char_x2 <= char_x2_next;
+//             char_y2 <= char_y2_next;
+//         end
+//     end
+// end
+
 
 controller u_controller1 (
     .latch(latch1),
@@ -297,11 +359,165 @@ pattern_gen u_pattern_gen (
   .valid(valid),
   .col(col),  
   .row(row),
-  .tile(final_rgb),    
+  .tile(display_rgb),    
   .rgb(rgb)     
 );
 
+// Hit/damage signals
+logic hit_stun_active1, hit_stun_active2;
+logic [9:0] damage1, damage2;
+logic [1:0] stocks1, stocks2;
+logic respawn1, respawn2;
 
+// Player alive status - alive if they have lives left
+logic player1_alive, player2_alive;
+assign player1_alive = (stocks1 > 0);
+assign player2_alive = (stocks2 > 0);
+
+// If button A is pressed AND characters are colliding (player1_hit) -> opponent takes damage
+// Uses the existing AABB collision detection from daniel
+
+// Edge detection for button presses to avoid repeated hits while holding
+logic prev_A1, prev_A2;
+logic a1_pressed, a2_pressed;
+
+always_ff @(posedge clk_out) begin
+    prev_A1 <= button_A1;
+    prev_A2 <= button_A2;
+end
+
+assign a1_pressed = button_A1 && !prev_A1;  // Rising edge of A button
+assign a2_pressed = button_A2 && !prev_A2;
+
+// Player 1 attacks Player 2 when: A pressed + characters colliding + P2 not in hitstun
+logic got_hit2;
+assign got_hit2 = a1_pressed && player1_hit && !hit_stun_active2;
+
+// Player 2 attacks Player 1 when: A pressed + characters colliding + P1 not in hitstun  
+logic got_hit1;
+assign got_hit1 = a2_pressed && player1_hit && !hit_stun_active1;
+
+// Player 1 Hit/Damage FSM
+hit_FSM player1_hit_fsm (
+    .clk(clk_out),
+    .reset(1'b0),
+    .frame_tick(frame_rate),
+    .got_hit(got_hit1),
+    .hit_damage_in(6'd12),  // 12% damage per hit
+    .hit_stun_active(hit_stun_active1),
+    .damage(damage1),
+    .stocks(stocks1),
+    .respawn_trigger(respawn1)
+);
+
+// Player 2 Hit/Damage FSM
+hit_FSM player2_hit_fsm (
+    .clk(clk_out),
+    .reset(1'b0),
+    .frame_tick(frame_rate),
+    .got_hit(got_hit2),
+    .hit_damage_in(6'd12),  // 12% damage per hit
+    .hit_stun_active(hit_stun_active2),
+    .damage(damage2),
+    .stocks(stocks2),
+    .respawn_trigger(respawn2)
+);
+
+// HEALTH BAR RENDERING
+
+// Health bar positions
+localparam int P1_BAR_X = 20;
+localparam int P2_BAR_X = 520;
+localparam int BAR_Y = 10;
+localparam int BAR_WIDTH = 100;
+localparam int BAR_HEIGHT = 15;
+
+// Calculate health bar fill (inverse of damage - more damage = less bar)
+logic [9:0] p1_fill, p2_fill;
+assign p1_fill = (damage1 >= 100) ? 0 : (100 - damage1);
+assign p2_fill = (damage2 >= 100) ? 0 : (100 - damage2);
+
+// Health bar pixel detection
+logic inside_p1_bar_outline, inside_p1_bar_fill;
+logic inside_p2_bar_outline, inside_p2_bar_fill;
+logic inside_health_bar;
+logic [5:0] health_bar_rgb;
+
+always_comb begin
+    // Player 1 health bar
+    inside_p1_bar_outline = (col >= P1_BAR_X && col < P1_BAR_X + BAR_WIDTH + 4 &&
+                             row >= BAR_Y && row < BAR_Y + BAR_HEIGHT + 4);
+    inside_p1_bar_fill = (col >= P1_BAR_X + 2 && col < P1_BAR_X + 2 + p1_fill &&
+                          row >= BAR_Y + 2 && row < BAR_Y + BAR_HEIGHT + 2);
+    
+    // Player 2 health bar
+    inside_p2_bar_outline = (col >= P2_BAR_X && col < P2_BAR_X + BAR_WIDTH + 4 &&
+                             row >= BAR_Y && row < BAR_Y + BAR_HEIGHT + 4);
+    inside_p2_bar_fill = (col >= P2_BAR_X + 2 && col < P2_BAR_X + 2 + p2_fill &&
+                          row >= BAR_Y + 2 && row < BAR_Y + BAR_HEIGHT + 2);
+    
+    inside_health_bar = inside_p1_bar_outline || inside_p2_bar_outline;
+    
+    // Color the health bars
+    if (inside_p1_bar_fill)
+        health_bar_rgb = 6'b001100;  // Green fill for P1
+    else if (inside_p1_bar_outline)
+        health_bar_rgb = 6'b111111;  // White outline for P1
+    else if (inside_p2_bar_fill)
+        health_bar_rgb = 6'b110000;  // Red fill for P2
+    else if (inside_p2_bar_outline)
+        health_bar_rgb = 6'b111111;  // White outline for P2
+    else
+        health_bar_rgb = 6'b000000;
+end
+
+// Stock indicators (small squares below health bar)
+logic inside_stock_indicator;
+logic [5:0] stock_rgb;
+
+always_comb begin
+    inside_stock_indicator = 0;
+    stock_rgb = 6'b000000;
+    
+    // Player 1 stocks (3 small squares)
+    if (row >= BAR_Y + BAR_HEIGHT + 8 && row < BAR_Y + BAR_HEIGHT + 18) begin
+        if (stocks1 >= 1 && col >= P1_BAR_X && col < P1_BAR_X + 10) begin
+            inside_stock_indicator = 1;
+            stock_rgb = 6'b001100;  // Green
+        end else if (stocks1 >= 2 && col >= P1_BAR_X + 15 && col < P1_BAR_X + 25) begin
+            inside_stock_indicator = 1;
+            stock_rgb = 6'b001100;
+        end else if (stocks1 >= 3 && col >= P1_BAR_X + 30 && col < P1_BAR_X + 40) begin
+            inside_stock_indicator = 1;
+            stock_rgb = 6'b001100;
+        end
+    end
+    
+    // Player 2 stocks (3 small squares) -- Logic for P2 was missing/merged in original snippet, ensuring it acts correctly
+    if (row >= BAR_Y + BAR_HEIGHT + 8 && row < BAR_Y + BAR_HEIGHT + 18) begin
+        if (stocks2 >= 1 && col >= P2_BAR_X && col < P2_BAR_X + 10) begin
+            inside_stock_indicator = 1;
+            stock_rgb = 6'b110000;  // Red
+        end else if (stocks2 >= 2 && col >= P2_BAR_X + 15 && col < P2_BAR_X + 25) begin
+            inside_stock_indicator = 1;
+            stock_rgb = 6'b110000;
+        end else if (stocks2 >= 3 && col >= P2_BAR_X + 30 && col < P2_BAR_X + 40) begin
+            inside_stock_indicator = 1;
+            stock_rgb = 6'b110000;
+        end
+    end
+end
+
+// health bar overlay on top of game graphics
+logic [5:0] display_rgb;
+always_comb begin
+    if (inside_health_bar)
+        display_rgb = health_bar_rgb;
+    else if (inside_stock_indicator)
+        display_rgb = stock_rgb;
+    else
+        display_rgb = final_rgb;
+end
 
 
 endmodule

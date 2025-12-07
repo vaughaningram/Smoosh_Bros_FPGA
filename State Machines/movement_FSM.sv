@@ -8,6 +8,8 @@ module movement_FSM #(
     input logic clk,
     input logic frame_rate,
     input logic button_up,
+    input logic reset,
+    input logic collision,
     input logic button_down,
     input logic button_left,
     input logic button_right,

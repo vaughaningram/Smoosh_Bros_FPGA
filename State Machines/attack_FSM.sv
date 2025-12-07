@@ -20,27 +20,15 @@ module attack_FSM (
 
     localparam int ATTACK_FRAMES = 10;
 
-    typedef enum logic [2:0] {
-        ATK_NONE,
-        ATK_NEUTRAL,
-        ATK_SIDE,
-        ATK_UP,
-        ATK_DOWN
-    } attack_type_t;
+    // Attack type encoding (avoiding enum for Yosys compatibility)
+    localparam logic [2:0] ATK_NONE    = 3'd0;
+    localparam logic [2:0] ATK_NEUTRAL = 3'd1;
+    localparam logic [2:0] ATK_SIDE    = 3'd2;
+    localparam logic [2:0] ATK_UP      = 3'd3;
+    localparam logic [2:0] ATK_DOWN    = 3'd4;
 
-    attack_type_t curr, next;
+    logic [2:0] curr;
     logic [7:0] timer;
-
-    // Determine direction type of attack
-    // function attack_type_t decode_attack(
-    //     input logic up, down, left, right
-    // );
-    //     if (up)       return ATK_UP;
-    //     if (down)     return ATK_DOWN;
-    //     if (left||right) return ATK_SIDE;
-    //     return ATK_NEUTRAL;
-    // endfunction
-
 
     // Sequential Logic
     always_ff @(posedge clk or posedge reset) begin
@@ -63,9 +51,16 @@ module attack_FSM (
                     curr <= ATK_NONE;
 
             end else begin
-                // start new attack
+                // start new attack - inline decode logic
                 if (btn_atk) begin
-                    curr  <= decode_attack(btn_up, btn_down, btn_left, btn_right);
+                    if (btn_up)
+                        curr <= ATK_UP;
+                    else if (btn_down)
+                        curr <= ATK_DOWN;
+                    else if (btn_left || btn_right)
+                        curr <= ATK_SIDE;
+                    else
+                        curr <= ATK_NEUTRAL;
                     timer <= ATTACK_FRAMES;
                 end
             end

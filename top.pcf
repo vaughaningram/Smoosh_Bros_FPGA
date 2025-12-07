@@ -7,6 +7,7 @@ set_io vsync 23
 # external clk 
 set_io clk_in 20
 
+
 # 6-bit RGB output 
 set_io rgb[0] 26
 set_io rgb[1] 27
@@ -15,10 +16,14 @@ set_io rgb[3] 35
 set_io rgb[4] 31
 set_io rgb[5] 37
 
+
+set_io debug_collision 9
+
 # NES controller pins
-set_io latch1 2
-set_io latch2 3
-set_io ctrl_clk1 46
-set_io ctrl_clk2 48
-set_io data1  47
-set_io data2  45
+set_io latch1 28
+set_io latch2 43
+set_io ctrl_clk1 38
+set_io ctrl_clk2 45
+set_io data1  42
+set_io data2  36
+

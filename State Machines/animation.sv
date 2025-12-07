@@ -1,6 +1,7 @@
 module animation (
     input logic clk,
     input logic anim_tick,
+    input logic reset,
     input movement_state move_anim,
     output logic [10:0] anim_row,
     output logic [10:0] anim_col,

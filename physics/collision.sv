@@ -1,21 +1,47 @@
-module collision (
-    input logic clk,
-    input logic [9:0] char_x,      // Character X position (pixels)
-    input logic [9:0] char_y,       // Character Y position (pixels)
-    input logic [9:0] char_width,   // Character width (pixels)
-    input logic [9:0] char_height,  // Character height (pixels)
-    input logic [6:0] tile_x,       // Current tile X coordinate
-    input logic [6:0] tile_y,       // Current tile Y coordinate
-    input logic [5:0] tile_data,    // Tile color data from ROM
-    output logic is_solid,          // Is the current tile solid?
-    output logic collision_left,    // Collision detected on left side
-    output logic collision_right,   // Collision detected on right side
-    output logic collision_top,     // Collision detected on top
-    output logic collision_bottom,  // Collision detected on bottom
-    output logic is_grounded        // Character is standing on solid ground
+module collision #(
+    parameter W1 = 23, H1 = 30,
+    parameter W2 = 30, H2 = 40
+)(
+    input  logic signed [9:0] x1, y1,
+    input  logic signed [9:0] x2, y2,
+    input  logic collision,
+    input  logic clk, frame_tick,
+    output logic signed [9:0] new_x1,
+    output logic signed [9:0] new_y1
 );
 
+logic signed [10:0] overlap_left;
+logic signed [10:0] overlap_right;
+logic signed [10:0] overlap_top;
+logic signed [10:0] overlap_bottom;
+
+assign overlap_left   = (x1 + W1) - x2;
+assign overlap_right  = (x2 + W2) - x1;
+assign overlap_top    = (y1 + H1) - y2;
+assign overlap_bottom = (y2 + H2) - y1;
+
+logic signed [10:0] resolve_x =
+    (overlap_left < overlap_right) ? overlap_left : -overlap_right;
+
+logic signed [10:0] resolve_y =
+    (overlap_top < overlap_bottom) ? overlap_top : -overlap_bottom;
+
+logic [10:0] abs_resolve_x;
+logic [10:0] abs_resolve_y;
+
+assign abs_resolve_x = (resolve_x < 0) ? -resolve_x : resolve_x;
+assign abs_resolve_y = (resolve_y < 0) ? -resolve_y : resolve_y;
+
+always_ff @(posedge clk) begin
+    new_x1 <= x1;
+    new_y1 <= y1;
+
+    if (frame_tick && collision) begin
+        if (abs_resolve_x < abs_resolve_y)
+            new_x1 <= x1 - resolve_x;
+        else
+            new_y1 <= y1 - resolve_y;
+    end
+end
 
 endmodule
-
-
