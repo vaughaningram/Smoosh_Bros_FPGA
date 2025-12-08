@@ -42,7 +42,7 @@ The entire game engine runs **fully in parallel**, synchronized to the VGA clock
 - Clean animation transitions:  
   *idle → walk → run → jump → fall → attack*
 
-### 🧱**Rendering**
+### **Rendering**
 - **640×480 @ 60 Hz** VGA output  
 - Hardware HSYNC/VSYNC generation  
 - Background + platforms stored in ROM  
@@ -52,7 +52,7 @@ The entire game engine runs **fully in parallel**, synchronized to the VGA clock
 
 ---
 
-## 🎮 Controls
+## Controls
 
 | Action       | Button |
 |--------------|--------|
@@ -66,7 +66,7 @@ NES-style digital controllers supported through hardware interface.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 Smoosh_Bros/
 │
@@ -95,24 +95,25 @@ Smoosh_Bros/
 
 ---
 
-## 🔌 FPGA Pin Assignments
+## FPGA Pin Assignments
 
-set_io clk_in 20
-set_io clk_out 34
-
-set_io rgb[5] 37
-set_io rgb[4] 31
-set_io rgb[3] 35
-set_io rgb[2] 32
-set_io rgb[1] 27
-set_io rgb[0] 26
-
+# VGA sync signals
 set_io hsync 25
 set_io vsync 23
 
+# external clk 
+set_io clk_in 20
+
+set_io latch1 28
+set_io latch2 43
+set_io ctrl_clk1 38
+set_io ctrl_clk2 45
+set_io data1  42
+set_io data2  36
+
 ---
 
-## ⚙️ Build Instructions
+## Build Instructions
 
 ### **1. Install the toolchain**
 
@@ -132,7 +133,7 @@ apio upload
 
 ---
 
-## 🧠 How the Hardware Game Engine Works
+## How the Hardware Game Engine Works
 
 Every frame, the game logic executes as a fully pipelined hardware system:
 
@@ -150,7 +151,7 @@ Everything runs **continuously and in parallel** — the FPGA *is* the game engi
 
 ---
 
-## 🔧 Future Improvements
+## Future Improvements
 
 Planned extensions include:
 
