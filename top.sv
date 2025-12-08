@@ -150,7 +150,7 @@ logic clk_out;
                                           : 0;
       // platform drawing
       inside_plt_tile_next = (col >= plt_x && col < plt_x + 400 && row >= plt_y && row < plt_y + 9);
-      next_plt_addr = inside_plt_tile_next ? (((row - plt_y))* 100) + (((col - plt_x))): 0;
+      //next_plt_addr = inside_plt_tile_next ? (((row - plt_y))* 100) + (((col - plt_x))): 0;
 
       if (inside_char_tile1 && char_rgb1 != 6'b110011 && player1_alive) begin
         next_final_rgb = char_rgb1;
@@ -323,11 +323,11 @@ ROM_koopa_animations_23x30 u_koopa_rom_1 (
   .rgb2(next_char_rgb2)
 );
 
-ROM_platform u_platform_rom (
-  .clk(clk_out),
-  .addr(plt_addr),
-  .rgb(next_plt_rgb)
-);
+// ROM_platform u_platform_rom (
+//   .clk(clk_out),
+//   .addr(plt_addr),
+//   .rgb(next_plt_rgb)
+// );
 
 // ROM instance
 ROM_Screen u_rom (

@@ -24,8 +24,12 @@ module movement_FSM #(
 );
 localparam int GRAVITY = 1;
 localparam int MAX_FALL_SPEED = 10;
-localparam int PLATFORM_Y = 410;
-localparam int PLATFORM_X = 20;
+localparam int PLATFORM_Y = 380;
+localparam int PLATFORM_X = 110;
+localparam int PLATFORM3_Y = 215;
+localparam int PLATFORM3_X = 120;
+localparam int PLATFORM2_Y = 215;
+localparam int PLATFORM2_X = 420;
 localparam int JUMP_VELOCITY = -12;
 localparam int RUN_VELOCITY = 1;
 localparam int WALK_VELOCITY = 1;
@@ -50,6 +54,9 @@ logic button_left_pulse;
 logic button_pulse;
 // is colliding with platform
 logic touching_platform;
+logic touching_platform1;
+logic touching_platform2;
+logic touching_platform3;
 logic [9:0] new_x = INITIAL_X;
 logic [9:0] new_y = INITIAL_Y;
 logic [3:0] gravity_count;
@@ -86,6 +93,25 @@ logic got_hit_latch = 0;
     else if (frame_rate) begin
         // set next x
         new_x <= next_x;
+        // Horizontal screen bounce
+        if (new_x + WIDTH >= 640) begin      // right edge
+            new_x <= 640 - WIDTH;            // clamp position
+            x_vel <= -x_vel;                 // reverse horizontal velocity
+        end
+        else if (new_x <= 0) begin           // left edge
+            new_x <= 0;
+            x_vel <= -x_vel;
+        end
+
+        // Optional: Vertical screen bounce (ceiling/floor)
+        if (new_y <= 0) begin                // top edge
+            new_y <= 0;
+            y_vel <= -y_vel;                 // reverse vertical velocity
+        end
+        else if (new_y + HEIGHT >= 480) begin // bottom edge
+            new_y <= 480 - HEIGHT;
+            y_vel <= -y_vel;
+        end
 
         prev_button_left <= button_left;
         prev_button_right <= button_right;
@@ -159,7 +185,7 @@ logic got_hit_latch = 0;
         end
     
     // Apply movement based on which button is held
-    if (button_right && new_x < 610) begin
+    if (button_right) begin
         facing_right <= 1;
         if (is_running) begin
             if (x_vel < MAX_RUN_SPEED) begin
@@ -174,7 +200,7 @@ logic got_hit_latch = 0;
                 x_vel <= x_vel + 0;
             end
         end
-    end else if (button_left && new_x > 0) begin
+    end else if (button_left) begin
         facing_right <= 0;
         if (is_running) begin
             if (x_vel > (-1 *(MAX_RUN_SPEED))) begin
@@ -193,10 +219,19 @@ logic got_hit_latch = 0;
             
 
       // snap so bottom of sprite equals top of platform
-      if (touching_platform) begin
+      if (touching_platform1) begin
         if_jumped <= 0;
         new_y <= PLATFORM_Y - 2*HEIGHT;
-        end else begin
+        end 
+      else if (touching_platform2) begin
+        if_jumped <= 0;
+        new_y <= PLATFORM2_Y - 2*HEIGHT;
+        end
+      else if (touching_platform3) begin
+        if_jumped <= 0;
+        new_y <= PLATFORM3_Y - 2*HEIGHT;
+        end          
+        else begin
             new_y <= next_y;
             move_state <= JUMP;
         end
@@ -234,6 +269,26 @@ main_plt_collision  #(
         .y_pos(y_pos),
         .next_y(next_y),
         .touching_platform(touching_platform)
+    );
+
+plt2_collision  #(
+      .WIDTH(WIDTH),
+      .HEIGHT(HEIGHT)
+) player1_plt2_collision (
+        .x_pos(x_pos),
+        .y_pos(y_pos),
+        .next_y(next_y),
+        .touching_platform2(touching_platform2)
+    );
+
+plt3_collision  #(
+      .WIDTH(WIDTH),
+      .HEIGHT(HEIGHT)
+) player1_plt3_collision (
+        .x_pos(x_pos),
+        .y_pos(y_pos),
+        .next_y(next_y),
+        .touching_platform3(touching_platform3)
     );
 
 endmodule
