@@ -33,7 +33,7 @@ Every frame of gameplay, physics, animation, collision, health, and rendering is
 ### **Rendering**
 - 640x480 VGA output at 60 Hz  
 - Hardware generated sync signals  
-- Background and platform graphics from ROM  
+- Background and platform graphics stored in ROM  
 - Character sprites stored in block ROM  
 - Transparent masking for clean sprite edges  
 
@@ -81,7 +81,6 @@ Smoosh_Bros/
 
 ## **FPGA Pin Assignments**
 
-```text
 set_io clk_in 20
 set_io clk_out 34
 
@@ -99,111 +98,48 @@ set_io vsync 23
 
 ## **Build Instructions**
 
-### **Install the open source FPGA toolchain**
+### Install the toolchain
 
-```bash
 apio install system
 apio install scons
 apio install icestorm
 apio install nextpnr-ice40
 apio install oss-cad-suite
 
+### Build the project
+
+apio build
+
+### Upload to the FPGA
+
+apio upload
+
 ---
 
-## **Build Instructions**
+## **How the Game Engine Works**
 
-### **Build the project**
-```bash
-apio build
-Upload to the FPGA
-bash
-Copy code
-apio upload
-How the Game Engine Works
 Each frame, the hardware performs:
 
-Controller inputs are sampled
+1. Controller inputs are sampled  
+2. Movement FSM updates velocity and position  
+3. Attack FSM activates hitboxes  
+4. Shield FSM updates shield state  
+5. Collision and hit detection update health and stocks  
+6. Animation logic selects the correct sprite frame  
+7. Renderer outputs the correct pixel from sprites, platforms, or background  
+8. VGA controller drives the final pixel to the display  
 
-Movement FSM updates velocity and position
-
-Attack FSM activates hitboxes
-
-Shield FSM updates shield state
-
-Collision and hit detection update health and stocks
-
-Animation logic selects the correct sprite frame
-
-Renderer decides each pixel from background, platforms, and both characters
-
-VGA controller outputs the final pixel
-
-All game logic runs continuously in hardware with no processor.
-
-Future Work
-Expanded hitbox and damage system
-
-Special moves and projectiles
-
-Additional platform layouts
-
-Improved UI elements
-
-Sound output system
-
-Win or results screen
-
-yaml
-Copy code
+All logic runs continuously at full hardware speed.
 
 ---
 
-# ⚠️ Important  
-The triple backticks inside the code above will break if pasted normally into ChatGPT…  
-so here is the same content WITHOUT markdown fences, so you can see the structure:
+## **Future Work**
+
+- Expanded hitbox and damage system  
+- Special moves and projectiles  
+- Additional platform layouts  
+- Improved UI  
+- Sound output  
+- Win or results screen  
 
 ---
-
-## **Build Instructions**
-
-### **Build the project**
-```bash
-apio build
-Upload to the FPGA
-bash
-Copy code
-apio upload
-How the Game Engine Works
-Each frame, the hardware performs:
-
-Controller inputs are sampled
-
-Movement FSM updates velocity and position
-
-Attack FSM activates hitboxes
-
-Shield FSM updates shield state
-
-Collision and hit detection update health and stocks
-
-Animation logic selects the correct sprite frame
-
-Renderer decides each pixel from background, platforms, and both characters
-
-VGA controller outputs the final pixel
-
-All game logic runs continuously in hardware with no processor.
-
-Future Work
-Expanded hitbox and damage system
-
-Special moves and projectiles
-
-Additional platform layouts
-
-Improved UI elements
-
-Sound output system
-
-Win or results screen
-
