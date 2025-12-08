@@ -17,8 +17,8 @@ module movement_FSM #(
     input logic button_right,
     input logic got_hit,
     input logic knock_from_right,
-    output logic [9:0] x_pos,
-    output logic [9:0] y_pos,
+    output logic signed [10:0] x_pos,
+    output logic signed [10:0] y_pos,
     output logic facing_right,
     output movement_state move_state
 );
@@ -35,12 +35,16 @@ localparam int RUN_VELOCITY = 1;
 localparam int WALK_VELOCITY = 1;
 localparam int MAX_WALK_SPEED = 3;
 localparam int MAX_RUN_SPEED = 6;
+localparam int LEFT_BOUND = 0;
+localparam int RIGHT_BOUND = 640 - 2*23;
+localparam int TOP_BOUND = 0;
+localparam int BOTTOM_BOUND = 480 - 2 * 30;
 // gravity 
 logic signed [9:0] y_vel = 0;
 logic signed [9:0] x_vel = 0;
 // Compute next Y before committing
-logic signed [9:0] next_y;
-logic signed [9:0] next_x;
+logic signed [10:0] next_y;
+logic signed [10:0] next_x;
 assign next_y = new_y + y_vel;
 assign next_x = new_x + x_vel;
 // for double jumps
@@ -57,8 +61,8 @@ logic touching_platform;
 logic touching_platform1;
 logic touching_platform2;
 logic touching_platform3;
-logic [9:0] new_x = INITIAL_X;
-logic [9:0] new_y = INITIAL_Y;
+logic signed [10:0] new_x = INITIAL_X;
+logic signed [10:0] new_y = INITIAL_Y;
 logic [3:0] gravity_count;
 // timer for run
 logic [4:0]run_time = 0;
@@ -91,27 +95,27 @@ logic got_hit_latch = 0;
         got_hit_latch <= 0;
     end
     else if (frame_rate) begin
-        // set next x
+        if (next_x < LEFT_BOUND) begin
+        new_x <= LEFT_BOUND;
+        x_vel <= 10;
+        if_jumped <= 1;
+    end else if (next_x > RIGHT_BOUND) begin
+        new_x <= RIGHT_BOUND;
+        x_vel <= -10;
+        if_jumped <= 1;
+    end else begin
         new_x <= next_x;
-        // // Horizontal screen bounce
-        // if (new_x + WIDTH >= 640) begin      // right edge
-        //     new_x <= 640 - WIDTH;            // clamp position
-        //     x_vel <= -x_vel;                 // reverse horizontal velocity
-        // end
-        // else if (new_x <= 0) begin           // left edge
-        //     new_x <= 0;
-        //     x_vel <= -x_vel;
-        // end
-
-        // // Optional: Vertical screen bounce (ceiling/floor)
-        // if (new_y <= 0) begin                // top edge
-        //     new_y <= 0;
-        //     y_vel <= -y_vel;                 // reverse vertical velocity
-        // end
-        // else if (new_y + HEIGHT >= 480) begin // bottom edge
-        //     new_y <= 480 - HEIGHT;
-        //     y_vel <= -y_vel;
-        // end
+    end
+    if (next_y < TOP_BOUND) begin
+        new_y <= TOP_BOUND;
+        y_vel <= 3;
+        if_jumped <= 1;
+    end else if (next_y > BOTTOM_BOUND) begin
+        new_y <= BOTTOM_BOUND;
+        y_vel <= -10;
+        x_vel <= (x_vel > 0) ? -5 : 5;
+        if_jumped <= 1;
+    end
 
         prev_button_left <= button_left;
         prev_button_right <= button_right;
@@ -232,7 +236,9 @@ logic got_hit_latch = 0;
         new_y <= PLATFORM3_Y - 2*HEIGHT;
         end          
         else begin
+            if (next_y >= TOP_BOUND && next_y <= BOTTOM_BOUND) begin
             new_y <= next_y;
+            end 
             move_state <= JUMP;
         end
       // Jump 

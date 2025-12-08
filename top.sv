@@ -12,6 +12,13 @@ typedef enum logic [3:0] {
     UP_ATK,
     FOWARD_ATK
 } attack_state;
+
+typedef enum logic [1:0] {
+    STATE_START_SCREEN,
+    STATE_PLAYING,
+    STATE_GAME_OVER
+} game_state_t;
+
 module top (
   input logic clk_in,
   output logic debug_collision,
@@ -33,8 +40,6 @@ logic [9:0] col;
 logic [9:0] next_col;
 logic [9:0] row;
 logic [9:0] next_row;
-
-
 
 logic clk_out;
 
@@ -62,12 +67,12 @@ logic clk_out;
     // character position for top left pixel
     logic [5:0] koopa_max_width_1;
     logic [5:0] koopa_max_width_2;
-    logic [9:0] char_x1;
-    logic [9:0] char_y1;
+    logic [10:0] char_x1;
+    logic [10:0] char_y1;
     logic [10:0] anim_row1;
     logic [10:0] anim_col1;
-    logic [9:0] char_x2;
-    logic [9:0] char_y2;
+    logic [10:0] char_x2;
+    logic [10:0] char_y2;
     logic [10:0] anim_row2;
     logic [10:0] anim_col2;
 
@@ -236,13 +241,13 @@ movement_state player2_move_state;
 movement_FSM #(
   .WIDTH(23),
   .HEIGHT(30),
-  .INITIAL_X(375),
+  .INITIAL_X(400),
   .INITIAL_Y(300)
 ) player2_movement (
   .clk(clk_out),
   .player(0),
   .char_reset(respawn2),
-  .frame_rate(frame_rate),
+  .frame_rate(gated_frame_rate),
   .button_up(button_B2), // using button B instead of up pad since it is really painful to keep accidentally pressing
   .button_down(button_down2),
   .button_left(button_left2),
@@ -260,13 +265,13 @@ movement_state player1_move_state;
 movement_FSM #(
   .WIDTH(23),
   .HEIGHT(30),
-  .INITIAL_X(50),
-  .INITIAL_Y(290)
+  .INITIAL_X(130),
+  .INITIAL_Y(300)
 ) player1_movement (
   .clk(clk_out),
   .player(1),
   .char_reset(respawn1),
-  .frame_rate(frame_rate),
+  .frame_rate(gated_frame_rate),
   .button_up(button_B1),  // using button B instead of up pad since it is really painful to keep accidentally pressing
   .button_down(button_down1),
   .button_left(button_left1),
@@ -345,15 +350,79 @@ pattern_gen u_pattern_gen (
 );
 
 // Hit/damage signals
+// Hit/damage signals
 logic hit_stun_active1, hit_stun_active2;
 logic [9:0] damage1, damage2;
 logic [1:0] stocks1, stocks2;
+logic hit_respawn1, hit_respawn2;
 logic respawn1, respawn2;
 
 // Player alive status - alive if they have lives left
 logic player1_alive, player2_alive;
 assign player1_alive = (stocks1 > 0);
 assign player2_alive = (stocks2 > 0);
+
+// Game State Machine
+game_state_t current_state = STATE_START_SCREEN;
+game_state_t next_state;
+
+always_ff @(posedge clk_out) begin
+    if (init_respawn) 
+        current_state <= STATE_START_SCREEN;
+    else 
+        current_state <= next_state;
+end
+
+always_comb begin
+    next_state = current_state;
+    // Valid start press requires the controller to not be returning all 0s (disconnected/glitch)
+    // buttons is active LOW, so 8'h00 means ALL pressed.
+    logic start_valid_1; 
+    logic start_valid_2;
+    start_valid_1 = button_start1 && (buttons1 != 8'h00);
+    start_valid_2 = button_start2 && (buttons2 != 8'h00);
+
+    case (current_state)
+        STATE_START_SCREEN: begin
+            if (start_valid_1 || start_valid_2)
+                next_state = STATE_PLAYING;
+        end
+        STATE_PLAYING: begin
+            if (!player1_alive || !player2_alive)
+                next_state = STATE_GAME_OVER;
+        end
+        STATE_GAME_OVER: begin
+            if (start_valid_1 || start_valid_2)
+                next_state = STATE_PLAYING;
+        end
+    endcase
+end
+
+
+logic global_reset;
+// Reset if powering up OR transitioning FROM game over/start screen TO playing logic
+// Actually, simple way: Reset whenever we ENTER playing state from non-Playing state? 
+// Or just hold reset high when NOT playing?
+// Let's use specific triggers.
+// We want to reset positions/health when we START the game.
+// So global_reset should be true when (next_state == STATE_PLAYING && current_state != STATE_PLAYING)
+
+// BUT, init_respawn is 1-cycle at boot.
+// Let's make a dedicated "start_game_trigger" pulse.
+logic start_game_trigger;
+assign start_game_trigger = (current_state != STATE_PLAYING && next_state == STATE_PLAYING);
+
+assign global_reset = init_respawn || start_game_trigger;
+
+assign respawn1 = hit_respawn1 || global_reset;
+assign respawn2 = hit_respawn2 || global_reset;
+
+// We should only advance physics/logic when STATE_PLAYING
+logic game_active;
+assign game_active = (current_state == STATE_PLAYING);
+logic gated_frame_rate;
+assign gated_frame_rate = frame_rate && game_active;
+
 
 // If button A is pressed AND characters are colliding (player1_hit) -> opponent takes damage
 // Uses the existing AABB collision detection from daniel
@@ -362,7 +431,7 @@ logic a1_pressed1;
 logic attack_active1;
 attack_FSM player1_atk (
   .clk(clk_out),
-  .frame_tick(frame_rate),
+  .frame_tick(gated_frame_rate),
   .reset(init_respawn),
   .btn_A(button_A1),
   .btn_up(button_up1),
@@ -378,7 +447,7 @@ logic a1_pressed2;
 logic attack_active2;
 attack_FSM player2_atk (
   .clk(clk_out),
-  .frame_tick(frame_rate),
+  .frame_tick(gated_frame_rate),
   .reset(init_respawn),
   .btn_A(button_A2),
   .btn_up(button_up2),
@@ -409,27 +478,27 @@ assign got_hit1 = a1_pressed2 && player1_hit && !hit_stun_active1;
 // Player 1 Hit/Damage FSM
 hit_FSM player1_hit_fsm (
     .clk(clk_out),
-    .reset(1'b0),
-    .frame_tick(frame_rate),
+    .reset(global_reset),
+    .frame_tick(gated_frame_rate),
     .got_hit(got_hit1),
     .hit_damage_in(6'd12),  // 12% damage per hit
     .hit_stun_active(hit_stun_active1),
     .damage(damage1),
     .stocks(stocks1),
-    .respawn_trigger(respawn1)
+    .respawn_trigger(hit_respawn1)
 );
 
 // Player 2 Hit/Damage FSM
 hit_FSM player2_hit_fsm (
     .clk(clk_out),
-    .reset(1'b0),
-    .frame_tick(frame_rate),
+    .reset(global_reset),
+    .frame_tick(gated_frame_rate),
     .got_hit(got_hit2),
     .hit_damage_in(6'd12),  // 12% damage per hit
     .hit_stun_active(hit_stun_active2),
     .damage(damage2),
     .stocks(stocks2),
-    .respawn_trigger(respawn2)
+    .respawn_trigger(hit_respawn2)
 );
 
 // HEALTH BAR RENDERING
@@ -530,14 +599,48 @@ always_ff @(posedge clk_out) begin
   end
 end
 // health bar overlay on top of game graphics
+// Game Over Text Logic
+logic inside_game_over;
+game_over_text u_game_over_text (
+    .x(col),
+    .y(row),
+    .pixel_on(inside_game_over)
+);
+
+// Start Screen Text Logic
+logic inside_start_screen;
+start_screen_text u_start_screen (
+    .x(col),
+    .y(row),
+    .pixel_on(inside_start_screen)
+);
+
+// health bar overlay on top of game graphics
 logic [5:0] display_rgb;
 always_comb begin
-    if (inside_health_bar)
-        display_rgb = health_bar_rgb;
-    else if (inside_stock_indicator)
-        display_rgb = stock_rgb;
-    else
-        display_rgb = final_rgb;
+    case(current_state)
+        STATE_START_SCREEN: begin
+             if (inside_start_screen)
+                display_rgb = 6'b111111; // White text
+             else 
+                display_rgb = 6'b000000; // Black background
+        end
+        STATE_PLAYING: begin
+            if (inside_health_bar)
+                display_rgb = health_bar_rgb;
+            else if (inside_stock_indicator)
+                display_rgb = stock_rgb;
+            else
+                display_rgb = final_rgb;
+        end
+        STATE_GAME_OVER: begin
+            if (inside_game_over)
+                display_rgb = 6'b111111; // White text
+            else
+                display_rgb = final_rgb; // Frozen game background
+        end
+        default: display_rgb = final_rgb;
+    endcase
 end
 
 

@@ -2,10 +2,10 @@ module plt2_collision #(
     parameter WIDTH = 23,
     parameter HEIGHT = 30
     )(
-    input logic [9:0] x_pos,
-    input logic [9:0] y_pos,
-    input logic [9:0] next_y,
-    output logic touching_platform2
+   input logic signed [10:0] x_pos,
+   input logic signed [10:0] y_pos,
+   input logic signed [10:0] next_y,
+   output logic touching_platform2
 );
 localparam int PLATFORM_Y = 215;
 localparam int PLATFORM_X = 420;
