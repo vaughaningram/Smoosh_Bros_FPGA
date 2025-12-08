@@ -1,13 +1,14 @@
 module ROM_koopa_animations_23x30 (
     input logic clk,
     input logic [13:0] addr,
+    input logic player,
     output logic [5:0] rgb
 );
 
 // next rgb value to pass to rgb
 logic [5:0] next_rgb;
 
-// 4 bit output with 2760 addresses
+// 3 bit output with 9659 addresses
 logic [2:0] mem [0:9659];
 
 initial begin 
@@ -21,6 +22,7 @@ always_ff @(posedge clk) rgb <= next_rgb;
 // get the color from the pallet
 koopa_palette_lookup u_palette (
     .index(mem[addr]),
+    .player(player),
     .rgb(next_rgb)
 );
 
@@ -28,10 +30,12 @@ endmodule
 
 module koopa_palette_lookup (
     input  logic [2:0] index,
+    input logic player,
     output logic [5:0] rgb
 );
 // convert from 3 bits to 6 bit color
 always_comb begin
+    if (player) begin
     case (index)
         3'h0: rgb = 6'b110011;
         3'h1: rgb = 6'b000100;
@@ -42,6 +46,18 @@ always_comb begin
         3'h6: rgb = 6'b111100;
         3'h7: rgb = 6'b111000;
     endcase
+    end else begin
+        case (index)
+            3'h0: rgb = 6'b110011;
+            3'h1: rgb = 6'b010000;
+            3'h2: rgb = 6'b100000;
+            3'h3: rgb = 6'b111001;
+            3'h4: rgb = 6'b000000;
+            3'h5: rgb = 6'b111111;
+            3'h6: rgb = 6'b111100;
+            3'h7: rgb = 6'b111000;
+        endcase
+    end
 end
 endmodule
 

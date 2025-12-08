@@ -23,28 +23,23 @@ end
 always_comb begin
   case(state) 
   S1: begin
-    anim_row = 150;
-    anim_col = 0;
+    anim_row = 90;
+    anim_col = 23;
     next_state = S2;
   end
   S2: begin
-    anim_row = 150;
-    anim_col = 23;
+    anim_row = 120;
+    anim_col = 0;
     next_state = S3;
   end
   S3: begin
-    anim_row = 180;
-    anim_col = 0;
-    next_state = S4;
-  end
-  S4: begin
-    anim_row = 180;
+    anim_row = 120;
     anim_col = 23;
     next_state = S1;
   end
   default: begin
-    anim_col = 150;
-    anim_row = 0;
+    anim_col = 90;
+    anim_row = 23;
     next_state = S1;
     end
   endcase

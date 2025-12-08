@@ -6,6 +6,11 @@ typedef enum logic [3:0] {
     CROUCH,
     FALL
 } movement_state;
+typedef enum logic [3:0] {
+    NEUTRAL,
+    UP_ATK,
+    FOWARD_ATK
+} attack_state;
 module top (
   input logic clk_in,
   output logic debug_collision,
@@ -54,15 +59,16 @@ logic clk_out;
     logic [5:0] next_final_rgb;
 
     // character position for top left pixel
-    logic [5:0] koopa_max_width;
+    logic [5:0] koopa_max_width_1;
+    logic [5:0] koopa_max_width_2;
     logic [9:0] char_x1;
     logic [9:0] char_y1;
     logic [10:0] anim_row1;
     logic [10:0] anim_col1;
     logic [9:0] char_x2;
     logic [9:0] char_y2;
-    logic [9:0] anim_row2 = 0;
-    logic [9:0] anim_col2 = 0;
+    logic [10:0] anim_row2;
+    logic [10:0] anim_col2;
 
     logic facing_right1;
     logic facing_right2;
@@ -132,14 +138,14 @@ logic clk_out;
       // PLAYER 1 LOGIC
       inside_char_tile_next1 = (col >= char_x1 && col < char_x1 + 23*2  
                           && row >= char_y1 && row < char_y1 + 30*2);
-      next_char_addr1 = inside_char_tile_next1 ?  facing_right1 ? ((((row - char_y1)>>1) + anim_row1 )* koopa_max_width) + ( (23 - 1 - (((col - char_x1)>>1))) + anim_col1 ):
-                                                               ((((row - char_y1)>>1) + anim_row1 )* koopa_max_width) + (((col - char_x1)>>1) + anim_col1)
+      next_char_addr1 = inside_char_tile_next1 ?  facing_right1 ? ((((row - char_y1)>>1) + anim_row1 )* koopa_max_width_1) + ( (23 - 1 - (((col - char_x1)>>1))) + anim_col1 ):
+                                                               ((((row - char_y1)>>1) + anim_row1 )* koopa_max_width_1) + (((col - char_x1)>>1) + anim_col1)
                                           : 0;
       //PLAYER 2
-      inside_char_tile_next2 = (col >= char_x2 && col < char_x2 + 30*2  
-                          && row >= char_y2 && row < char_y2 + 40*2);
-      next_char_addr2 = inside_char_tile_next2 ?  ~facing_right2 ? ((((row - char_y2)>>1))* 30) + (30 - 1) - (((col - char_x2)>>1)):
-                                                               ((((row - char_y2)>>1))* 30) + (((col - char_x2)>>1))
+      inside_char_tile_next2 = (col >= char_x2 && col < char_x2 + 23*2  
+                          && row >= char_y2 && row < char_y2 + 30*2);
+      next_char_addr2 = inside_char_tile_next2 ?  facing_right2 ? ((((row - char_y2)>>1) + anim_row2)* koopa_max_width_2) + ( (23 - 1- (((col - char_x2)>>1))) + anim_col2):
+                                                               ((((row - char_y2)>>1) + anim_row2)* koopa_max_width_2) + (((col - char_x2)>>1) + anim_col2)
                                           : 0;
       // platform drawing
       inside_plt_tile_next = (col >= plt_x && col < plt_x + 400 && row >= plt_y && row < plt_y + 9);
@@ -202,7 +208,15 @@ logic clk_out;
     .move_anim(player1_move_state),
     .anim_row(anim_row1),
     .anim_col(anim_col1),
-    .max_width(koopa_max_width)
+    .max_width(koopa_max_width_1)
+  );
+  animation player2_animation(
+    .clk(clk_out),
+    .anim_tick(anim_tick),
+    .move_anim(player2_move_state),
+    .anim_row(anim_row2),
+    .anim_col(anim_col2),
+    .max_width(koopa_max_width_2)
   );
 
 
@@ -214,12 +228,14 @@ logic clk_out;
   logic button_select2, button_start2, button_B2, button_A2;
 movement_state player2_move_state;
 movement_FSM #(
-  .WIDTH(30),
-  .HEIGHT(40),
+  .WIDTH(23),
+  .HEIGHT(30),
   .INITIAL_X(375),
   .INITIAL_Y(300)
 ) player2_movement (
   .clk(clk_out),
+  .player(0),
+  .char_reset(respawn2),
   .frame_rate(frame_rate),
   .button_up(button_B2), // using button B instead of up pad since it is really painful to keep accidentally pressing
   .button_down(button_down2),
@@ -240,6 +256,8 @@ movement_FSM #(
   .INITIAL_Y(290)
 ) player1_movement (
   .clk(clk_out),
+  .player(1),
+  .char_reset(respawn1),
   .frame_rate(frame_rate),
   .button_up(button_B1),  // using button B instead of up pad since it is really painful to keep accidentally pressing
   .button_down(button_down1),
@@ -253,49 +271,6 @@ movement_FSM #(
   .reset(respawn1) // Respawn resets position
 );
 
-logic [9:0] char_x1_next;
-logic [9:0] char_y1_next;
-logic [9:0] char_x2_next;
-logic [9:0] char_y2_next;
-logic signed [9:0] new_x1;
-logic signed [9:0] new_y1;
-// collision #(
-//     .W1(23), 
-//     .H1(30),
-//     .W2(30), 
-//     .H2(40)
-// ) collision_u(
-//     .x1(char_x1_next), 
-//     .y1(char_y1_next),
-//     .x2(char_x2_next), 
-//     .y2(char_y2_next),
-//     .collision(player1_hit),
-//     .clk(clk_out), 
-//     .frame_tick(frame_rate),
-//     .new_x1(new_x1),
-//     .new_y1(new_y1)
-// );
-
-// always_ff @(posedge clk_out) begin
-//     if (frame_rate) begin
-//         if (player1_hit) begin
-//             // both players corrected
-//             char_x1 <= new_x1;
-//             char_y1 <= new_y1;
-
-//             // player 2 stays put
-//             char_x2 <= char_x2;
-//             char_y2 <= char_y2;
-
-//         end else begin
-//             char_x1 <= char_x1_next;
-//             char_y1 <= char_y1_next;
-
-//             char_x2 <= char_x2_next;
-//             char_y2 <= char_y2_next;
-//         end
-//     end
-// end
 
 
 controller u_controller1 (
@@ -330,15 +305,17 @@ controller u_controller2 (
     .clk(clk_out)
 );
 
-ROM_koopa_animations_23x30 u_koopa_rom_ (
+ROM_koopa_animations_23x30 u_koopa_rom_1 (
   .clk(clk_out),
   .addr(char_addr1),
+  .player(1),
   .rgb(next_char_rgb1)
 );
 
-ROM_marco u_marco_rom (
+ROM_koopa_animations_23x30 u_koopa_rom_2(
   .clk(clk_out),
   .addr(char_addr2),
+  .player(0),
   .rgb(next_char_rgb2)
 );
 
@@ -377,17 +354,7 @@ assign player2_alive = (stocks2 > 0);
 // If button A is pressed AND characters are colliding (player1_hit) -> opponent takes damage
 // Uses the existing AABB collision detection from daniel
 
-// Edge detection for button presses to avoid repeated hits while holding
-logic prev_A1, prev_A2;
-logic a1_pressed, a2_pressed;
 
-always_ff @(posedge clk_out) begin
-    prev_A1 <= button_A1;
-    prev_A2 <= button_A2;
-end
-
-assign a1_pressed = button_A1 && !prev_A1;  // Rising edge of A button
-assign a2_pressed = button_A2 && !prev_A2;
 
 // Player 1 attacks Player 2 when: A pressed + characters colliding + P2 not in hitstun
 logic got_hit2;

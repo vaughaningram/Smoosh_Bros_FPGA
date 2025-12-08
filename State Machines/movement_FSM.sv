@@ -6,6 +6,8 @@ module movement_FSM #(
     parameter INITIAL_Y = 0
     )(
     input logic clk,
+    input logic player,
+    input logic char_reset,
     input logic frame_rate,
     input logic button_up,
     input logic reset,
@@ -58,10 +60,24 @@ logic if_jumped;
 // check if we already pressed right or left to see if we can sprint
 logic if_walked;
 // counter for walking acceleration
-logic [3:0] walk_count;
+logic [3:0] fall_count;
 
  always_ff @(posedge clk) begin
-    if (frame_rate) begin
+    if (reset) begin
+        new_x        <= INITIAL_X;
+        new_y        <= INITIAL_Y;
+        x_vel        <= 0;
+        y_vel        <= 0;
+        facing_right <= player;
+        move_state   <= IDLE;
+        if_jumped    <= 0;
+        can_jump_extra <= 0;
+        is_running   <= 0;
+        idle_time    <= 0;
+        run_time     <= 0;
+        fall_count   <= 0;
+    end
+    else if (frame_rate) begin
         // set next x
         new_x <= next_x;
 
@@ -88,17 +104,20 @@ logic [3:0] walk_count;
         //         if (x_vel > 0) x_vel <= x_vel - 1;
         //         if (x_vel < 0) x_vel <= x_vel + 1;
         // end
-        if (!button_left && !button_right && touching_platform &&
-            ((x_vel < 0) || (x_vel > 0))) begin
-               if (x_vel > 0) x_vel <= x_vel - 1;
-                else          x_vel <= x_vel + 1; 
+
+        if (!button_left && !button_right && !touching_platform 
+            && ((x_vel < 0) || (x_vel > 0))) begin
+            if (fall_count == 0) begin
+                fall_count <= 4;
+                if (x_vel > 0) x_vel <= x_vel - 1;
+                else           x_vel <= x_vel + 1;
+            end else fall_count <= fall_count - 1;
             end
-
-
         if (!button_left && !button_right && touching_platform &&
             ((x_vel < 0) || (x_vel > 0))) begin
             if_walked <= 0;
             is_running <= 0;
+            fall_count <= 0;
             if (x_vel > 0) x_vel <= x_vel - 1;
             else           x_vel <= x_vel + 1;
         end
@@ -163,6 +182,7 @@ logic [3:0] walk_count;
         new_y <= PLATFORM_Y - 2*HEIGHT;
         end else begin
             new_y <= next_y;
+            move_state <= JUMP;
         end
       // Jump 
       if (button_pulse && !if_jumped) begin
