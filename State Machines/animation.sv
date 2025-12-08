@@ -43,6 +43,7 @@ always_comb begin
     if (attack_active) begin
         case(curr_atk_move)
         NEUTRAL: begin anim_row = atk_neutral_row; anim_col = atk_neutral_col; max_width = 46;end
+        ATK_NONE: begin anim_row = idle_row; anim_col = idle_col; max_width = 46; end
         default: begin anim_row = idle_row; anim_col = idle_col; max_width = 46; end
         endcase
     end else begin

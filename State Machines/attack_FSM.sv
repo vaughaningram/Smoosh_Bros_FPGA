@@ -1,6 +1,7 @@
 module attack_FSM (
     input  logic clk,
     input  logic frame_tick,
+    input logic reset,
 
     // Controller inputs
     input  logic btn_A,
@@ -25,7 +26,15 @@ module attack_FSM (
 
     // Sequential Logic
     always_ff @(posedge clk) begin
-        if (frame_tick) begin
+        if (reset) begin
+        attack_locked <= 0;
+        lock_timer    <= 0;
+        prev_A        <= 0;
+        A_pressed     <= 0;
+        attack_active <= 0;
+        atk_state     <= ATK_NONE;
+    end
+        else if (frame_tick) begin
             prev_A <= btn_A;
             A_pulse <= btn_A && !prev_A;
             // start new attack - inline decode logic
@@ -46,6 +55,7 @@ module attack_FSM (
             if (attack_locked) begin
                 A_pressed <= 0;
                 if (lock_timer == 0) begin
+                    atk_state <= ATK_NONE;
                     attack_locked <= 0;
                     attack_active <= 0;
                 end else lock_timer <= lock_timer - 1;

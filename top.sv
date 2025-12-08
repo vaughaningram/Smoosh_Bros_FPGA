@@ -7,6 +7,7 @@ typedef enum logic [3:0] {
     FALL
 } movement_state;
 typedef enum logic [3:0] {
+    ATK_NONE,
     NEUTRAL,
     UP_ATK,
     FOWARD_ATK
@@ -201,7 +202,7 @@ logic clk_out;
     end
   end
 
-
+  logic hit_on1;
   animation player1_animation (
     .clk(clk_out),
     .anim_tick(anim_tick),
@@ -212,6 +213,7 @@ logic clk_out;
     .anim_col(anim_col1),
     .max_width(koopa_max_width_1)
   );
+  logic hit_on2;
   animation player2_animation(
     .clk(clk_out),
     .anim_tick(anim_tick),
@@ -245,6 +247,8 @@ movement_FSM #(
   .button_down(button_down2),
   .button_left(button_left2),
   .button_right(button_right2),
+  .got_hit(got_hit2),
+  .knock_from_right(knock_from_right2),
   //.collision(player2_hit),
   .x_pos(char_x2),
   .y_pos(char_y2),
@@ -267,6 +271,8 @@ movement_FSM #(
   .button_down(button_down1),
   .button_left(button_left1),
   .button_right(button_right1),
+  .got_hit(got_hit1),
+  .knock_from_right(knock_from_right1),
   //.collision(player1_hit),
   .x_pos(char_x1),
   .y_pos(char_y1),
@@ -311,16 +317,10 @@ controller u_controller2 (
 
 ROM_koopa_animations_23x30 u_koopa_rom_1 (
   .clk(clk_out),
-  .addr(char_addr1),
-  .player(1),
-  .rgb(next_char_rgb1)
-);
-
-ROM_koopa_animations_23x30 u_koopa_rom_2(
-  .clk(clk_out),
-  .addr(char_addr2),
-  .player(0),
-  .rgb(next_char_rgb2)
+  .addr1(char_addr1),
+  .addr2(char_addr2),
+  .rgb1(next_char_rgb1),
+  .rgb2(next_char_rgb2)
 );
 
 ROM_platform u_platform_rom (
@@ -363,6 +363,7 @@ logic attack_active1;
 attack_FSM player1_atk (
   .clk(clk_out),
   .frame_tick(frame_rate),
+  .reset(init_respawn),
   .btn_A(button_A1),
   .btn_up(button_up1),
   .btn_down(button_down1),
@@ -378,6 +379,7 @@ logic attack_active2;
 attack_FSM player2_atk (
   .clk(clk_out),
   .frame_tick(frame_rate),
+  .reset(init_respawn),
   .btn_A(button_A2),
   .btn_up(button_up2),
   .btn_down(button_down2),
@@ -388,6 +390,14 @@ attack_FSM player2_atk (
   .A_pressed(a1_pressed2)
 );
 
+// which side did we get attacked
+logic knock_from_right1;
+logic knock_from_right2;
+// P1: got hit by P2 from the right if P2 is to the right of P1
+assign knock_from_right1 = (char_x2 > char_x1);
+
+// P2: got hit by P1 from the right if P1 is to the right of P2
+assign knock_from_right2 = (char_x1 > char_x2);
 // Player 1 attacks Player 2 when: A pressed + characters colliding + P2 not in hitstun
 logic got_hit2;
 assign got_hit2 = a1_pressed1 && player1_hit && !hit_stun_active2;
@@ -506,7 +516,19 @@ always_comb begin
         end
     end
 end
+// top-level locals
+logic init_respawn;       // 1-cycle pulse at startup
+logic init_done;
 
+// Generate a single pulse on the first frame_tick after power-up/reset
+always_ff @(posedge clk_out) begin
+  if (!init_done && frame_rate) begin
+    init_respawn <= 1'b1;
+    init_done    <= 1'b1;
+  end else begin
+    init_respawn <= 1'b0;
+  end
+end
 // health bar overlay on top of game graphics
 logic [5:0] display_rgb;
 always_comb begin

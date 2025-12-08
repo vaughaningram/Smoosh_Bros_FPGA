@@ -15,6 +15,8 @@ module movement_FSM #(
     input logic button_down,
     input logic button_left,
     input logic button_right,
+    input logic got_hit,
+    input logic knock_from_right,
     output logic [9:0] x_pos,
     output logic [9:0] y_pos,
     output logic facing_right,
@@ -61,8 +63,11 @@ logic if_jumped;
 logic if_walked;
 // counter for walking acceleration
 logic [3:0] fall_count;
+// save hit for next frame
+logic got_hit_latch = 0;
 
  always_ff @(posedge clk) begin
+    if (got_hit) got_hit_latch <= 1;
     if (reset) begin
         new_x        <= INITIAL_X;
         new_y        <= INITIAL_Y;
@@ -76,6 +81,7 @@ logic [3:0] fall_count;
         idle_time    <= 0;
         run_time     <= 0;
         fall_count   <= 0;
+        got_hit_latch <= 0;
     end
     else if (frame_rate) begin
         // set next x
@@ -87,6 +93,17 @@ logic [3:0] fall_count;
         button_left_pulse <= button_left && !prev_button_left;
         button_right_pulse <= button_right && !prev_button_right;
         button_pulse <= button_up && !prev_button_up;
+        if(got_hit_latch) begin
+            if (knock_from_right) begin
+                x_vel <= -10;
+            end else begin
+                x_vel <= 10;
+            end
+            y_vel <= -3;
+            if_jumped <= 1;
+            got_hit_latch <= 0;
+        end else begin
+        
 
         // making sure WALK doesnt get taken over by IDLE too fast
         if (button_right || button_left) begin
@@ -104,7 +121,6 @@ logic [3:0] fall_count;
         //         if (x_vel > 0) x_vel <= x_vel - 1;
         //         if (x_vel < 0) x_vel <= x_vel + 1;
         // end
-
         if (!button_left && !button_right && !touching_platform 
             && ((x_vel < 0) || (x_vel > 0))) begin
             if (fall_count == 0) begin
@@ -204,6 +220,7 @@ logic [3:0] fall_count;
         y_vel         <= 0;
         gravity_count <= 0;
       end
+    end
     end
  end
 assign x_pos = new_x;

@@ -1,12 +1,12 @@
 module ROM_koopa_animations_23x30 (
     input logic clk,
-    input logic [13:0] addr,
-    input logic player,
-    output logic [5:0] rgb
+    input logic [13:0] addr1,
+    input logic [13:0] addr2,
+    output logic [5:0] rgb1,
+    output logic [5:0] rgb2
 );
 
-// next rgb value to pass to rgb
-logic [5:0] next_rgb;
+
 
 // 3 bit output with 9659 addresses
 logic [2:0] mem [0:9659];
@@ -15,15 +15,17 @@ initial begin
     // reads from a hex file to memory
     $readmemh("koopa_23x30_animations.koopa", mem);
 end
-// combinational since sv will implement own clk
-// assign rgb = next_rgb;
-always_ff @(posedge clk) rgb <= next_rgb;
 
 // get the color from the pallet
-koopa_palette_lookup u_palette (
-    .index(mem[addr]),
-    .player(player),
-    .rgb(next_rgb)
+koopa_palette_lookup u_palette1 (
+    .index(mem[addr1]),
+    .player(1),
+    .rgb(rgb1)
+);
+koopa_palette_lookup u_palette2 (
+    .index(mem[addr2]),
+    .player(0),
+    .rgb(rgb2)
 );
 
 endmodule

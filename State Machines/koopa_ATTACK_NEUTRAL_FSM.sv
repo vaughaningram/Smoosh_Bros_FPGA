@@ -15,14 +15,8 @@ logic [4:0] hold_target;
 always_ff @(posedge clk) begin
     if (reset) begin
         state      <= S1;
-        frame_hold <= 0;
     end else if (anim_tick) begin
-        if (frame_hold == hold_target - 1) begin
-            frame_hold <= 0;
-            state      <= next_state;
-        end else begin
-            frame_hold <= frame_hold + 1;
-        end
+        state <= next_state;
     end
 end
 
@@ -31,25 +25,21 @@ always_comb begin
         S1: begin
             anim_row    = 90;
             anim_col    = 23;
-            hold_target = 5;   // 5 ticks
             next_state  = S2;
         end
         S2: begin
             anim_row    = 120;
             anim_col    = 0;
-            hold_target = 5;   // 5 ticks
             next_state  = S3;
         end
         S3: begin
             anim_row    = 120;
             anim_col    = 23;
-            hold_target = 6;   // 6 ticks
-            next_state  = S3;  // stay on last frame until reset
+            next_state  = S3;
         end
         default: begin
             anim_row    = 90;
             anim_col    = 23;
-            hold_target = 5;
             next_state  = S1;
         end
     endcase
