@@ -11,7 +11,11 @@ localparam int PLATFORM_Y = 215;
 localparam int PLATFORM_X = 420;
 localparam int PLT_WIDTH = 105;
 
+logic signed [10:0] y_bottom;
+logic signed [10:0] next_y_bottom;
 always_comb begin
+    // y_bottom = y_pos + (HEIGHT*2);
+    // next_y_bottom = next_y + (HEIGHT*2);
     touching_platform2 =
         // character's bottom crossing platform top
         (y_pos + HEIGHT*2 <= PLATFORM_Y) &&      // was above the platform last frame
