@@ -205,6 +205,8 @@ logic clk_out;
   animation player1_animation (
     .clk(clk_out),
     .anim_tick(anim_tick),
+    .attack_active(attack_active1),
+    .atk_state(atk_state1),
     .move_anim(player1_move_state),
     .anim_row(anim_row1),
     .anim_col(anim_col1),
@@ -213,6 +215,8 @@ logic clk_out;
   animation player2_animation(
     .clk(clk_out),
     .anim_tick(anim_tick),
+    .attack_active(attack_active2),
+    .atk_state(atk_state2),
     .move_anim(player2_move_state),
     .anim_row(anim_row2),
     .anim_col(anim_col2),
@@ -353,16 +357,44 @@ assign player2_alive = (stocks2 > 0);
 
 // If button A is pressed AND characters are colliding (player1_hit) -> opponent takes damage
 // Uses the existing AABB collision detection from daniel
-
-
+attack_state atk_state1;
+logic a1_pressed1;
+logic attack_active1;
+attack_FSM player1_atk (
+  .clk(clk_out),
+  .frame_tick(frame_rate),
+  .btn_A(button_A1),
+  .btn_up(button_up1),
+  .btn_down(button_down1),
+  .btn_left(button_left1),
+  .btn_right(button_right1),
+  .attack_active(attack_active1),
+  .atk_state(atk_state1),
+  .A_pressed(a1_pressed1)
+);
+attack_state atk_state2;
+logic a1_pressed2;
+logic attack_active2;
+attack_FSM player2_atk (
+  .clk(clk_out),
+  .frame_tick(frame_rate),
+  .btn_A(button_A2),
+  .btn_up(button_up2),
+  .btn_down(button_down2),
+  .btn_left(button_left2),
+  .btn_right(button_right2),
+  .attack_active(attack_active2),
+  .atk_state(atk_state2),
+  .A_pressed(a1_pressed2)
+);
 
 // Player 1 attacks Player 2 when: A pressed + characters colliding + P2 not in hitstun
 logic got_hit2;
-assign got_hit2 = a1_pressed && player1_hit && !hit_stun_active2;
+assign got_hit2 = a1_pressed1 && player1_hit && !hit_stun_active2;
 
 // Player 2 attacks Player 1 when: A pressed + characters colliding + P1 not in hitstun  
 logic got_hit1;
-assign got_hit1 = a2_pressed && player1_hit && !hit_stun_active1;
+assign got_hit1 = a1_pressed2 && player1_hit && !hit_stun_active1;
 
 // Player 1 Hit/Damage FSM
 hit_FSM player1_hit_fsm (
