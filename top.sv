@@ -438,42 +438,91 @@ always_comb begin
         health_bar_rgb = 6'b000000;
 end
 
-// Stock indicators (small squares below health bar)
+// HEART-SHAPED STOCK INDICATORS
 logic inside_stock_indicator;
 logic [5:0] stock_rgb;
+
+// 10x10 pixel heart function
+function logic heart_pixel(
+    input int px,
+    input int py
+);
+    logic a, b, c;
+    begin
+        // Two round bumps (circles)
+        a = ((px-3)*(px-3) + (py-3)*(py-3) <= 6);
+        b = ((px-6)*(px-6) + (py-3)*(py-3) <= 6);
+
+        // Bottom triangle
+        c = (py >= 4 && py <= 9 && abs(px-4) <= (9 - py));
+
+        heart_pixel = a || b || c;
+    end
+endfunction
 
 always_comb begin
     inside_stock_indicator = 0;
     stock_rgb = 6'b000000;
-    
-    // Player 1 stocks (3 small squares)
+
+    int heart_y = row - (BAR_Y + BAR_HEIGHT + 8);
+
+    // PLAYER 1 HEARTS (Green)
     if (row >= BAR_Y + BAR_HEIGHT + 8 && row < BAR_Y + BAR_HEIGHT + 18) begin
+        
+        // Heart 1
         if (stocks1 >= 1 && col >= P1_BAR_X && col < P1_BAR_X + 10) begin
-            inside_stock_indicator = 1;
-            stock_rgb = 6'b001100;  // Green
-        end else if (stocks1 >= 2 && col >= P1_BAR_X + 15 && col < P1_BAR_X + 25) begin
-            inside_stock_indicator = 1;
-            stock_rgb = 6'b001100;
-        end else if (stocks1 >= 3 && col >= P1_BAR_X + 30 && col < P1_BAR_X + 40) begin
-            inside_stock_indicator = 1;
-            stock_rgb = 6'b001100;
+            if (heart_pixel(col - P1_BAR_X, heart_y)) begin
+                inside_stock_indicator = 1;
+                stock_rgb = 6'b001100;
+            end
+        end
+        
+        // Heart 2
+        if (stocks1 >= 2 && col >= P1_BAR_X + 15 && col < P1_BAR_X + 25) begin
+            if (heart_pixel(col - (P1_BAR_X + 15), heart_y)) begin
+                inside_stock_indicator = 1;
+                stock_rgb = 6'b001100;
+            end
+        end
+
+        // Heart 3
+        if (stocks1 >= 3 && col >= P1_BAR_X + 30 && col < P1_BAR_X + 40) begin
+            if (heart_pixel(col - (P1_BAR_X + 30), heart_y)) begin
+                inside_stock_indicator = 1;
+                stock_rgb = 6'b001100;
+            end
         end
     end
-    
-    // Player 2 stocks (3 small squares) -- Logic for P2 was missing/merged in original snippet, ensuring it acts correctly
+
+    // PLAYER 2 HEARTS (Red)
     if (row >= BAR_Y + BAR_HEIGHT + 8 && row < BAR_Y + BAR_HEIGHT + 18) begin
+
+        // Heart 1
         if (stocks2 >= 1 && col >= P2_BAR_X && col < P2_BAR_X + 10) begin
-            inside_stock_indicator = 1;
-            stock_rgb = 6'b110000;  // Red
-        end else if (stocks2 >= 2 && col >= P2_BAR_X + 15 && col < P2_BAR_X + 25) begin
-            inside_stock_indicator = 1;
-            stock_rgb = 6'b110000;
-        end else if (stocks2 >= 3 && col >= P2_BAR_X + 30 && col < P2_BAR_X + 40) begin
-            inside_stock_indicator = 1;
-            stock_rgb = 6'b110000;
+            if (heart_pixel(col - P2_BAR_X, heart_y)) begin
+                inside_stock_indicator = 1;
+                stock_rgb = 6'b110000;
+            end
+        end
+        
+        // Heart 2
+        if (stocks2 >= 2 && col >= P2_BAR_X + 15 && col < P2_BAR_X + 25) begin
+            if (heart_pixel(col - (P2_BAR_X + 15), heart_y)) begin
+                inside_stock_indicator = 1;
+                stock_rgb = 6'b110000;
+            end
+        end
+
+        // Heart 3
+        if (stocks2 >= 3 && col >= P2_BAR_X + 30 && col < P2_BAR_X + 40) begin
+            if (heart_pixel(col - (P2_BAR_X + 30), heart_y)) begin
+                inside_stock_indicator = 1;
+                stock_rgb = 6'b110000;
+            end
         end
     end
 end
+
 
 // health bar overlay on top of game graphics
 logic [5:0] display_rgb;
