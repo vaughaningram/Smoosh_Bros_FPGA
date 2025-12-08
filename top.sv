@@ -241,7 +241,7 @@ movement_state player2_move_state;
 movement_FSM #(
   .WIDTH(23),
   .HEIGHT(30),
-  .INITIAL_X(400),
+  .INITIAL_X(420),
   .INITIAL_Y(300)
 ) player2_movement (
   .clk(clk_out),
