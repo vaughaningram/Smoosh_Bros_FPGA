@@ -28,7 +28,7 @@ The entire game engine runs **fully in parallel**, synchronized to the VGA clock
 
 ---
 
-## 🕹️ Gameplay Features
+## Gameplay Features
 
 ### **Player Systems**
 - Responsive two-player controls  
