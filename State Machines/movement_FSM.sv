@@ -93,25 +93,25 @@ logic got_hit_latch = 0;
     else if (frame_rate) begin
         // set next x
         new_x <= next_x;
-        // Horizontal screen bounce
-        if (new_x + WIDTH >= 640) begin      // right edge
-            new_x <= 640 - WIDTH;            // clamp position
-            x_vel <= -x_vel;                 // reverse horizontal velocity
-        end
-        else if (new_x <= 0) begin           // left edge
-            new_x <= 0;
-            x_vel <= -x_vel;
-        end
+        // // Horizontal screen bounce
+        // if (new_x + WIDTH >= 640) begin      // right edge
+        //     new_x <= 640 - WIDTH;            // clamp position
+        //     x_vel <= -x_vel;                 // reverse horizontal velocity
+        // end
+        // else if (new_x <= 0) begin           // left edge
+        //     new_x <= 0;
+        //     x_vel <= -x_vel;
+        // end
 
-        // Optional: Vertical screen bounce (ceiling/floor)
-        if (new_y <= 0) begin                // top edge
-            new_y <= 0;
-            y_vel <= -y_vel;                 // reverse vertical velocity
-        end
-        else if (new_y + HEIGHT >= 480) begin // bottom edge
-            new_y <= 480 - HEIGHT;
-            y_vel <= -y_vel;
-        end
+        // // Optional: Vertical screen bounce (ceiling/floor)
+        // if (new_y <= 0) begin                // top edge
+        //     new_y <= 0;
+        //     y_vel <= -y_vel;                 // reverse vertical velocity
+        // end
+        // else if (new_y + HEIGHT >= 480) begin // bottom edge
+        //     new_y <= 480 - HEIGHT;
+        //     y_vel <= -y_vel;
+        // end
 
         prev_button_left <= button_left;
         prev_button_right <= button_right;
@@ -260,7 +260,7 @@ logic got_hit_latch = 0;
  end
 assign x_pos = new_x;
 assign y_pos = new_y;
-
+assign touching_platform = touching_platform1 || touching_platform2 || touching_platform3;
 main_plt_collision  #(
       .WIDTH(WIDTH),
       .HEIGHT(HEIGHT)
@@ -268,7 +268,7 @@ main_plt_collision  #(
         .x_pos(x_pos),
         .y_pos(y_pos),
         .next_y(next_y),
-        .touching_platform(touching_platform)
+        .touching_platform(touching_platform1)
     );
 
 plt2_collision  #(
