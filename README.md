@@ -9,7 +9,7 @@
 
 </div>
 
-## ⭐ Overview
+## Overview
 
 **Smoosh Bros** is a fully hardware-accelerated fighting game implemented in **pure SystemVerilog**.  
 There is **no CPU**, no firmware, and no software loop of any kind.
