@@ -1,21 +1,23 @@
 from PIL import Image
 
-img = Image.open("../Backgrounds/Layer 1_background_1.png").convert("RGB")
+img = Image.open("..\Sprites\pixil-frame-0 (2).png").convert("RGB")
 
 w = 640
 h = 480
-out_img = Image.new("RGB",(w,h))
-# w,h = img.size
 
-
-TILE_SIZE = 2
-TILE = 4
+TILE_SIZE = 8
+TILE = 64
 print(img.size)
 
 addr = 0
-
 tiles_x = w // TILE_SIZE
 tiles_y = h // TILE_SIZE
+
+out_img = Image.new("RGB",(tiles_x,tiles_y))
+# w,h = img.size
+
+
+
 
 
 def to6Bit(r,g,b):
@@ -45,10 +47,8 @@ for Ty in range(tiles_y):
         ravg = rsum // TILE
         gavg = gsum // TILE
         bavg = bsum // TILE
-        r6, g6, b6 = (ravg >> 6) * 85, (gavg >> 6) * 85, (bavg >> 6) * 85
-        for py2 in range(TILE_SIZE):
-            for px2 in range(TILE_SIZE):
-                out_img.putpixel((Tx*TILE_SIZE + px2, Ty*TILE_SIZE + py2), (r6, g6, b6))
+        r6, g6, b6 = (ravg >> 6) * 85, (gavg >> 6) * 85, (bavg >> 6) * 85        
+        out_img.putpixel((Tx,Ty), (r6, g6, b6))
 
         
         val = to6Bit(ravg,gavg,bavg)

@@ -2,16 +2,20 @@ module plt3_collision #(
     parameter WIDTH = 23,
     parameter HEIGHT = 30
     )(
-    input logic [9:0] x_pos,
-    input logic [9:0] y_pos,
-    input logic [9:0] next_y,
+    input logic signed [10:0] x_pos,
+    input logic signed [10:0] y_pos,
+    input logic signed [10:0] next_y,
     output logic touching_platform3
 );
 localparam int PLATFORM_Y = 215;
 localparam int PLATFORM_X = 120;
 localparam int PLT_WIDTH = 105;
 
+// logic signed [10:0] y_bottom;
+// logic signed [10:0] next_y_bottom;
 always_comb begin
+    // y_bottom = y_pos + (HEIGHT*2);
+    // next_y_bottom = next_y + (HEIGHT*2);
     touching_platform3 =
         // character's bottom crossing platform top
         (y_pos + HEIGHT*2 <= PLATFORM_Y) &&      // was above the platform last frame

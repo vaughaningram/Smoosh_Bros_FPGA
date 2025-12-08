@@ -62,12 +62,12 @@ logic clk_out;
     // character position for top left pixel
     logic [5:0] koopa_max_width_1;
     logic [5:0] koopa_max_width_2;
-    logic [9:0] char_x1;
-    logic [9:0] char_y1;
+    logic [10:0] char_x1;
+    logic [10:0] char_y1;
     logic [10:0] anim_row1;
     logic [10:0] anim_col1;
-    logic [9:0] char_x2;
-    logic [9:0] char_y2;
+    logic [10:0] char_x2;
+    logic [10:0] char_y2;
     logic [10:0] anim_row2;
     logic [10:0] anim_col2;
 
