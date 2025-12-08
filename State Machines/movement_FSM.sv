@@ -98,12 +98,10 @@ logic got_hit_latch = 0;
         if (next_x < LEFT_BOUND) begin
         new_x <= LEFT_BOUND;
         x_vel <= 10;
-        y_vel <= -10;
         if_jumped <= 1;
     end else if (next_x > RIGHT_BOUND) begin
         new_x <= RIGHT_BOUND;
         x_vel <= -10;
-        y_vel <= -10;
         if_jumped <= 1;
     end else begin
         new_x <= next_x;
@@ -114,8 +112,8 @@ logic got_hit_latch = 0;
         if_jumped <= 1;
     end else if (next_y > BOTTOM_BOUND) begin
         new_y <= BOTTOM_BOUND;
-        y_vel <= -15;
-        x_vel <= (x_vel > 0) ? -10 : 10;
+        y_vel <= -10;
+        x_vel <= (x_vel > 0) ? -5 : 5;
         if_jumped <= 1;
     end
 

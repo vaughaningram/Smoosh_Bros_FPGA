@@ -1,4 +1,4 @@
-timestamp: "08121713971"
+timestamp: "08133714280"
 arch: ICE40
 fpga_info {
   fpga_id: "ice40up5k-sg48"
@@ -15,16 +15,16 @@ environment {
   terminal_mode: FORCE_TERMINAL
   theme_name: "light"
   debug_level: 0
-  yosys_path: "C:\\Users\\danyc\\.apio\\packages\\oss-cad-suite\\share\\yosys"
-  trellis_path: "C:\\Users\\danyc\\.apio\\packages\\oss-cad-suite\\share\\trellis"
+  yosys_path: "C:\\Users\\jonah\\.apio\\packages\\oss-cad-suite\\share\\yosys"
+  trellis_path: "C:\\Users\\jonah\\.apio\\packages\\oss-cad-suite\\share\\trellis"
 }
 apio_env_params {
   env_name: "default"
-  board_id: "upduino3"
+  board_id: "upduino31"
   top_module: "top"
 }
 target {
   upload {
-    programmer_cmd: "iceprog -d d:1/8 $SOURCE"
+    programmer_cmd: "iceprog -d d:2/16 $SOURCE"
   }
 }
